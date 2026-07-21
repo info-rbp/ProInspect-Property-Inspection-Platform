@@ -128,7 +128,7 @@ export const getResolvedFirebaseConfig = (): FirebaseRuntimeConfig | undefined =
     return runtimeFirebaseConfig;
   }
 
-  if (firebaseAppletConfig && firebaseAppletConfig.apiKey && firebaseAppletConfig.projectId) {
+  if (import.meta.env.DEV && firebaseAppletConfig && firebaseAppletConfig.apiKey && firebaseAppletConfig.projectId) {
     return {
       apiKey: firebaseAppletConfig.apiKey,
       authDomain: firebaseAppletConfig.authDomain || '',
@@ -146,7 +146,9 @@ export const getFirebaseConfig = (): FirebaseRuntimeConfig => {
   return getResolvedFirebaseConfig() || getRuntimeFirebaseConfig();
 };
 
-export const getGeminiApiKey = (): string => getRuntimeConfig().geminiApiKey;
+export const isBrowserAiAllowed = (): boolean => import.meta.env.DEV || import.meta.env.VITE_ENABLE_BROWSER_AI === 'true';
+
+export const getGeminiApiKey = (): string => isBrowserAiAllowed() ? getRuntimeConfig().geminiApiKey : '';
 
 export const isAiConfigured = (): boolean => getGeminiApiKey().length > 0;
 
