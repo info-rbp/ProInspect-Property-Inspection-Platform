@@ -29,13 +29,21 @@ describe('reportPresentation', () => {
     });
 
     expect(getAggregateRoomStatus([
-      { id: '1', name: 'Walls', isClean: true, isUndamaged: true, isWorking: true, comment: '' },
-      { id: '2', name: 'Floor', isClean: false, isUndamaged: true, isWorking: true, comment: '' },
+      { id: '1', name: 'Light', isClean: true, isUndamaged: true, isWorking: true, workingStatus: 'operation_confirmed', comment: '' },
+      { id: '2', name: 'Fan', isClean: false, isUndamaged: true, isWorking: true, workingStatus: 'operation_confirmed', comment: '' },
     ])).toEqual({
       isClean: false,
       isUndamaged: true,
       isWorking: true,
     });
+
+    expect(getAggregateRoomStatus([
+      { id: '3', name: 'Power point', isClean: true, isUndamaged: true, isWorking: false, workingStatus: 'not_tested', comment: '' },
+    ]).isWorking).toBeNull();
+
+    expect(getAggregateRoomStatus([
+      { id: '4', name: 'Exhaust fan', isClean: true, isUndamaged: true, isWorking: false, workingStatus: 'not_working', comment: '' },
+    ]).isWorking).toBe(false);
   });
 
   it('formats checklist values for PDF output', () => {
