@@ -9,6 +9,8 @@ const VALID_REPORT_TYPES = new Set([
   'Property Condition Report',
   'Routine Inspection',
   'Exit Inspection',
+  'Inspection Comparison Report',
+  'Maintenance and Follow-Up Report',
 ]);
 
 const VALID_IMAGE_TYPES = new Set([
