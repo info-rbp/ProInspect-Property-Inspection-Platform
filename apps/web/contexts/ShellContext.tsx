@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { classifyOperationalFailure, subscribeToShellOperations, type PersistenceMode, type ShellOperationDetail } from '../services/shellEvents';
 
 export type NotificationTone = 'info' | 'success' | 'warning' | 'error';
+export type SynchronisationStatus = 'local' | 'synchronised' | 'syncing' | 'pending' | 'failed' | 'offline';
 
 export interface ShellNotification {
   id: string;
@@ -17,6 +19,11 @@ interface ShellContextValue {
   notifications: ShellNotification[];
   notify: (notification: Omit<ShellNotification, 'id'>) => void;
   dismissNotification: (id: string) => void;
+  synchronisationStatus: SynchronisationStatus;
+  persistenceMode: PersistenceMode;
+  activeOperationCount: number;
+  lastSuccessfulSyncAt?: string;
+  lastSavedVersion?: number;
 }
 
 const ShellContext = createContext<ShellContextValue | undefined>(undefined);
@@ -25,6 +32,31 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [notifications, setNotifications] = useState<ShellNotification[]>([]);
+  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
+  const [persistenceMode, setPersistenceMode] = useState<PersistenceMode>('local');
+  const [activeOperations, setActiveOperations] = useState<Record<string, ShellOperationDetail>>({});
+  const [syncFailed, setSyncFailed] = useState(false);
+  const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string>();
+  const [lastSavedVersion, setLastSavedVersion] = useState<number>();
+
+  const notify = useCallback((notification: Omit<ShellNotification, 'id'>) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setNotifications((current) => [...current.slice(-4), { ...notification, id }]);
+  }, []);
+
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications((current) => current.filter((notification) => notification.id !== id));
+  }, []);
+
+  useEffect(() => {
+    const updateOnlineState = () => setOnline(navigator.onLine);
+    window.addEventListener('online', updateOnlineState);
+    window.addEventListener('offline', updateOnlineState);
+    return () => {
+      window.removeEventListener('online', updateOnlineState);
+      window.removeEventListener('offline', updateOnlineState);
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasPendingChanges) return undefined;
@@ -36,14 +68,61 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasPendingChanges]);
 
-  const notify = useCallback((notification: Omit<ShellNotification, 'id'>) => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setNotifications((current) => [...current, { ...notification, id }]);
-  }, []);
+  useEffect(() => subscribeToShellOperations((operation) => {
+    if (operation.persistence) setPersistenceMode(operation.persistence);
+    if (operation.status === 'started') {
+      setActiveOperations((current) => ({ ...current, [operation.id]: operation }));
+      if (operation.kind === 'sync' || operation.kind === 'save') setSyncFailed(false);
+      return;
+    }
 
-  const dismissNotification = useCallback((id: string) => {
-    setNotifications((current) => current.filter((notification) => notification.id !== id));
-  }, []);
+    setActiveOperations((current) => {
+      const next = { ...current };
+      delete next[operation.id];
+      return next;
+    });
+
+    if (operation.status === 'succeeded') {
+      if (operation.kind === 'save' || operation.kind === 'sync') {
+        setLastSuccessfulSyncAt(operation.occurredAt);
+        setSyncFailed(false);
+      }
+      if (operation.recordVersion !== undefined) setLastSavedVersion(operation.recordVersion);
+      if (operation.clearDirty) setHasPendingChanges(false);
+      if (operation.announceSuccess) notify({ title: operation.title, message: operation.message, tone: 'success' });
+      return;
+    }
+
+    if (operation.kind === 'save' || operation.kind === 'sync') setSyncFailed(true);
+    const fallbackKind = classifyOperationalFailure(`${operation.title} ${operation.message || ''}`);
+    notify({
+      title: operation.title || `${fallbackKind} failed`,
+      message: operation.message || 'The operation did not complete. Review the record and try again.',
+      tone: 'error',
+    });
+  }), [notify]);
+
+  useEffect(() => {
+    if (!hasPendingChanges) return undefined;
+    const handlePopState = () => {
+      if (!window.confirm('You have unsaved changes. Leave this page and discard them?')) {
+        window.history.go(1);
+      } else {
+        setHasPendingChanges(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [hasPendingChanges]);
+
+  const synchronisationStatus = useMemo<SynchronisationStatus>(() => {
+    if (!online) return 'offline';
+    const activeValues = Object.values(activeOperations);
+    if (activeValues.some((operation) => operation.kind === 'sync' || operation.kind === 'save')) return 'syncing';
+    if (syncFailed) return 'failed';
+    if (hasPendingChanges) return 'pending';
+    return persistenceMode === 'cloud' && lastSuccessfulSyncAt ? 'synchronised' : 'local';
+  }, [activeOperations, hasPendingChanges, lastSuccessfulSyncAt, online, persistenceMode, syncFailed]);
 
   const value = useMemo(() => ({
     mobileNavigationOpen,
@@ -53,7 +132,12 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     notifications,
     notify,
     dismissNotification,
-  }), [dismissNotification, hasPendingChanges, mobileNavigationOpen, notifications, notify]);
+    synchronisationStatus,
+    persistenceMode,
+    activeOperationCount: Object.keys(activeOperations).length,
+    lastSuccessfulSyncAt,
+    lastSavedVersion,
+  }), [activeOperations, dismissNotification, hasPendingChanges, lastSavedVersion, lastSuccessfulSyncAt, mobileNavigationOpen, notifications, notify, persistenceMode, synchronisationStatus]);
 
   return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;
 };
