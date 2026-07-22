@@ -6,6 +6,8 @@ import { getOrCreateUserProfile } from '../services/platform/userProfileService'
 import { auth, isFirebaseConfigured, onAuthStateChanged, signInWithEmailPassword, signOutUser } from '../services/storageService';
 import type { UserProfile, UserRole } from '../types/platform';
 import { seedMockData } from '../services/platform/mockDataSeeder';
+import { purgeOfflineQueueOnSignOut } from '../services/offline/queueSecurity';
+import { purgeOfflineWorkspace } from '../services/offlineWorkspace';
 
 interface AuthContextValue {
   currentUser: User | null;
@@ -102,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async (): Promise<void> => {
+    await Promise.all([purgeOfflineQueueOnSignOut(), purgeOfflineWorkspace()]);
     localStorage.removeItem('pcr_proinspect_logged_in');
     if (auth) {
       try {

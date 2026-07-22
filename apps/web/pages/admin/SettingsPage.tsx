@@ -41,6 +41,8 @@ import {
   Search, 
   ExternalLink 
 } from 'lucide-react';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
+import { runShellOperation } from '../../services/runShellOperation';
 
 const statusClass = (enabled: boolean) => 
   enabled 
@@ -87,6 +89,11 @@ const SettingsPage: React.FC = () => {
 
   // Picker States
   const [pickerSelectedFile, setPickerSelectedFile] = useState<DriveFile | null>(null);
+  const driveDirty = useDirtyForm({ scopeId: 'settings:drive', entityType: 'settings', entityId: 'drive' });
+  const calendarDirty = useDirtyForm({ scopeId: 'settings:calendar', entityType: 'settings', entityId: 'calendar' });
+  const gmailDirty = useDirtyForm({ scopeId: 'settings:gmail', entityType: 'settings', entityId: 'gmail' });
+  const docsDirty = useDirtyForm({ scopeId: 'settings:docs', entityType: 'settings', entityId: 'docs' });
+  const formsDirty = useDirtyForm({ scopeId: 'settings:forms', entityType: 'settings', entityId: 'forms' });
 
   // Auto-connect if access token is already available in memory
   useEffect(() => {
@@ -159,14 +166,11 @@ const SettingsPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      await uploadDriveFile(driveFileName, driveFileContent || 'Hello from ProInspect Platform!');
-      alert('File uploaded successfully!');
+      await runShellOperation({ kind: 'upload', title: 'Drive file uploaded', source: 'google-drive', persistence: 'cloud', dirtyScopeId: 'settings:drive', entityType: 'settings', entityId: 'drive', action: 'create', announceSuccess: true }, () => uploadDriveFile(driveFileName, driveFileContent || 'Hello from ProInspect Platform!'));
       setDriveFileName('');
       setDriveFileContent('');
       loadTabData('drive');
-    } catch (err: any) {
-      alert(`Error uploading file: ${err.message}`);
-    }
+    } catch { /* The shell operation publishes the actionable failure. */ }
   };
 
   const handleCreateEvent = async (e: React.FormEvent) => {
@@ -179,19 +183,16 @@ const SettingsPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      await createCalendarEvent({
+      await runShellOperation({ kind: 'save', title: 'Calendar event created', source: 'google-calendar', persistence: 'cloud', dirtyScopeId: 'settings:calendar', entityType: 'settings', entityId: 'calendar', action: 'create', announceSuccess: true }, () => createCalendarEvent({
         summary: calSummary,
         start: { dateTime: new Date(calStart).toISOString() },
         end: { dateTime: new Date(calEnd).toISOString() }
-      });
-      alert('Calendar event created successfully!');
+      }));
       setCalSummary('');
       setCalStart('');
       setCalEnd('');
       loadTabData('calendar');
-    } catch (err: any) {
-      alert(`Error creating event: ${err.message}`);
-    }
+    } catch { /* The shell operation publishes the actionable failure. */ }
   };
 
   const handleSendEmail = async (e: React.FormEvent) => {
@@ -204,15 +205,12 @@ const SettingsPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      await sendGmailMessage(gmailTo, gmailSubject, gmailBody);
-      alert('Email sent successfully!');
+      await runShellOperation({ kind: 'save', title: 'Email sent', source: 'google-gmail', persistence: 'cloud', dirtyScopeId: 'settings:gmail', entityType: 'settings', entityId: 'gmail', action: 'send', announceSuccess: true }, () => sendGmailMessage(gmailTo, gmailSubject, gmailBody));
       setGmailTo('');
       setGmailSubject('');
       setGmailBody('');
       loadTabData('gmail');
-    } catch (err: any) {
-      alert(`Error sending email: ${err.message}`);
-    }
+    } catch { /* The shell operation publishes the actionable failure. */ }
   };
 
   const handleCreateDoc = async (e: React.FormEvent) => {
@@ -225,13 +223,10 @@ const SettingsPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      const doc = await createGoogleDoc(docTitle);
-      alert(`Google Doc created successfully! Document ID: ${doc.documentId}`);
+      await runShellOperation({ kind: 'save', title: 'Google document created', source: 'google-docs', persistence: 'cloud', dirtyScopeId: 'settings:docs', entityType: 'settings', entityId: 'docs', action: 'create', announceSuccess: true }, () => createGoogleDoc(docTitle));
       setDocTitle('');
       loadTabData('drive');
-    } catch (err: any) {
-      alert(`Error creating document: ${err.message}`);
-    }
+    } catch { /* The shell operation publishes the actionable failure. */ }
   };
 
   const handleCreateForm = async (e: React.FormEvent) => {
@@ -244,13 +239,10 @@ const SettingsPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      const formRes = await createGoogleForm(formTitle);
-      alert(`Google Form created successfully! Form ID: ${formRes.formId}`);
+      await runShellOperation({ kind: 'save', title: 'Google form created', source: 'google-forms', persistence: 'cloud', dirtyScopeId: 'settings:forms', entityType: 'settings', entityId: 'forms', action: 'create', announceSuccess: true }, () => createGoogleForm(formTitle));
       setFormTitle('');
       loadTabData('drive');
-    } catch (err: any) {
-      alert(`Error creating form: ${err.message}`);
-    }
+    } catch { /* The shell operation publishes the actionable failure. */ }
   };
 
   return (
@@ -446,7 +438,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: DRIVE */}
                   {activeTab === 'drive' && (
                     <div className="space-y-5">
-                      <form onSubmit={handleCreateFile} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <form {...driveDirty.formProps} onSubmit={handleCreateFile} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 className="text-xs font-bold text-gray-950">Upload / Create text file in Google Drive</h4>
                         <div className="grid sm:grid-cols-3 gap-2">
                           <input
@@ -503,7 +495,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: CALENDAR */}
                   {activeTab === 'calendar' && (
                     <div className="space-y-5">
-                      <form onSubmit={handleCreateEvent} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <form {...calendarDirty.formProps} onSubmit={handleCreateEvent} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 className="text-xs font-bold text-gray-950">Add Event to primary Google Calendar</h4>
                         <div className="grid sm:grid-cols-3 gap-2">
                           <input
@@ -570,7 +562,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: GMAIL */}
                   {activeTab === 'gmail' && (
                     <div className="space-y-5">
-                      <form onSubmit={handleSendEmail} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <form {...gmailDirty.formProps} onSubmit={handleSendEmail} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 className="text-xs font-bold text-gray-950">Send Email with Gmail</h4>
                         <div className="grid gap-2">
                           <input
@@ -629,7 +621,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: DOCS */}
                   {activeTab === 'docs' && (
                     <div className="space-y-5">
-                      <form onSubmit={handleCreateDoc} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <form {...docsDirty.formProps} onSubmit={handleCreateDoc} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 className="text-xs font-bold text-gray-950">Create Google Doc Document</h4>
                         <div className="flex gap-2">
                           <input
@@ -705,7 +697,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: FORMS */}
                   {activeTab === 'forms' && (
                     <div className="space-y-5">
-                      <form onSubmit={handleCreateForm} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <form {...formsDirty.formProps} onSubmit={handleCreateForm} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 className="text-xs font-bold text-gray-950">Create Google Form</h4>
                         <div className="flex gap-2">
                           <input

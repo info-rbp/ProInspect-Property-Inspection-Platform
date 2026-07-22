@@ -79,7 +79,13 @@ export class FirestoreOperationalRepository implements OperationalRepository {
         throw Object.assign(new Error('The record has changed. Reload and retry.'), {
           code: 'VERSION_CONFLICT',
           status: 409,
-          details: { expectedVersion, actualVersion: existing.version },
+          details: {
+            expectedVersion,
+            actualVersion: existing.version,
+            serverVersion: existing.version,
+            serverRecord: existing,
+            submittedRecord: data,
+          },
         });
       }
       const updated: StoredRecord = {

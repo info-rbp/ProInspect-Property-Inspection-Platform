@@ -233,13 +233,13 @@ async function fromAggregate(aggregate: ReportAggregatePayload): Promise<ReportD
   return reportMetadata(aggregate.report, rooms);
 }
 
-export const saveReportToDB = async (report: ReportData): Promise<ReportData> => {
+export const saveReportToDB = async (report: ReportData, dirtyScopeId = `report:${report.id}`): Promise<ReportData> => {
   const timestamp = new Date().toISOString();
   const prepared = { ...report, createdAt: report.createdAt || timestamp, updatedAt: timestamp };
   if (!isFirebaseConfigured() || !auth) {
     return runShellOperation({
       kind: 'save', title: 'Saving report', source: LOCAL_STORE_NAME, persistence: 'local',
-      dirtyScopeId: `report:${report.id}`, entityType: 'report', entityId: report.id,
+      dirtyScopeId, entityType: 'report', entityId: report.id,
       action: report.createdAt ? 'update' : 'create', announceSuccess: true,
     }, async () => {
       const localDB = await initLocalDB();
@@ -250,7 +250,7 @@ export const saveReportToDB = async (report: ReportData): Promise<ReportData> =>
   const stored = await apiRequest<ReportAggregatePayload>(report.agencyId, `/api/v1/reports/${report.id}/aggregate`, {
     method: 'PUT',
     body: toAggregate(prepared),
-    dirtyScopeId: `report:${report.id}`,
+    dirtyScopeId,
     entityType: 'report',
     entityId: report.id,
     action: report.createdAt ? 'update' : 'create',

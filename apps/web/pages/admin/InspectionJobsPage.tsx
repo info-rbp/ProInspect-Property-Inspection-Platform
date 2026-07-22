@@ -5,6 +5,7 @@ import type { InspectionJob, PropertyRecord } from '../../types/platform';
 import { createInspectionJob, listInspectionJobs } from '../../services/platform/inspectionJobService';
 import { listProperties } from '../../services/platform/propertyService';
 import { DEFAULT_AGENCY_ID } from '../../services/platform/userProfileService';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
 
 const reportTypes: InspectionJob['reportType'][] = ['Property Condition Report', 'Routine Inspection', 'Exit Inspection'];
 
@@ -20,6 +21,7 @@ const InspectionJobsPage: React.FC = () => {
     assignedReviewerId: '',
     notes: '',
   });
+  const dirtyForm = useDirtyForm({ scopeId: 'job:new', entityType: 'job' });
 
   const loadData = async () => {
     const [nextJobs, nextProperties] = await Promise.all([listInspectionJobs(), listProperties()]);
@@ -63,7 +65,7 @@ const InspectionJobsPage: React.FC = () => {
       </div>
 
       {isCreating && (
-        <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-3">
+        <form {...dirtyForm.formProps} onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-3">
           <select required value={form.propertyId} onChange={(event) => setForm((prev) => ({ ...prev, propertyId: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm">
             <option value="">Select property</option>
             {properties.map((property) => <option key={property.id} value={property.id}>{property.address}</option>)}
@@ -77,7 +79,7 @@ const InspectionJobsPage: React.FC = () => {
           <input placeholder="Notes" value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
           <div className="flex gap-2 md:col-span-3">
             <button type="submit" disabled={!form.propertyId} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">Create job</button>
-            <button type="button" onClick={() => setIsCreating(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
+            <button type="button" onClick={() => { dirtyForm.markClean(); setIsCreating(false); }} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
           </div>
         </form>
       )}

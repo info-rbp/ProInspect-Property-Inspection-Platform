@@ -29,7 +29,8 @@ import {
   Map,
   Clock,
   X,
-  AlertCircle
+  AlertCircle,
+  Eye,
 } from 'lucide-react';
 import type { PropertyRecord, Agency, InspectionJob, Tenancy } from '../../types/platform';
 import { getProperty, updateProperty } from '../../services/platform/propertyService';
@@ -37,6 +38,9 @@ import { getAgency, listAgencies } from '../../services/platform/agencyService';
 import { createInspectionJob, listInspectionJobs, updateInspectionJobStatus } from '../../services/platform/inspectionJobService';
 import { createTenancy, listTenancies } from '../../services/platform/tenancyService';
 import { DEFAULT_AGENCY_ID } from '../../services/platform/userProfileService';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
+
+const propertyTypes: PropertyRecord['propertyType'][] = ['house', 'unit', 'apartment', 'townhouse', 'villa', 'other'];
 
 const DEFAULT_LAYOUT: Record<string, string[]> = {
   'Entry and Hallway': [
@@ -194,6 +198,8 @@ const PropertyDetailPage: React.FC = () => {
     leaseStartDate: '',
     leaseEndDate: '',
   });
+  const propertyDirty = useDirtyForm({ scopeId: `property:${propertyId ?? 'unknown'}`, entityType: 'property', entityId: propertyId });
+  const jobDirty = useDirtyForm({ scopeId: 'job:new', entityType: 'job' });
 
   const loadPropertyData = async () => {
     if (!propertyId) return;
@@ -1181,12 +1187,12 @@ const PropertyDetailPage: React.FC = () => {
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Edit2 size={18} /> Edit Property Record
               </h3>
-              <button onClick={() => setIsEditingProperty(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { propertyDirty.markClean(); setIsEditingProperty(false); }} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handlePropertyUpdateSubmit} className="space-y-4">
+            <form {...propertyDirty.formProps} onSubmit={handlePropertyUpdateSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Street Address *</label>
@@ -1342,7 +1348,7 @@ const PropertyDetailPage: React.FC = () => {
               <div className="pt-4 border-t border-gray-100 flex gap-2 justify-end">
                 <button
                   type="button"
-                  onClick={() => setIsEditingProperty(false)}
+                  onClick={() => { propertyDirty.markClean(); setIsEditingProperty(false); }}
                   className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
                 >
                   Cancel
@@ -1368,12 +1374,12 @@ const PropertyDetailPage: React.FC = () => {
               <h3 className="text-md font-bold text-gray-900 flex items-center gap-1.5">
                 <Calendar size={18} /> Schedule Property Inspection
               </h3>
-              <button onClick={() => setShowInspectionModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { jobDirty.markClean(); setShowInspectionModal(false); }} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateInspection} className="space-y-4">
+            <form {...jobDirty.formProps} onSubmit={handleCreateInspection} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Inspection Type *</label>
                 <select
@@ -1432,7 +1438,7 @@ const PropertyDetailPage: React.FC = () => {
               <div className="pt-3 border-t border-gray-100 flex gap-2 justify-end">
                 <button
                   type="button"
-                  onClick={() => setShowInspectionModal(false)}
+                  onClick={() => { jobDirty.markClean(); setShowInspectionModal(false); }}
                   className="rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Cancel

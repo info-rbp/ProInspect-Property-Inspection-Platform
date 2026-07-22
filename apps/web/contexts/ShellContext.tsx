@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { classifyOperationalFailure, subscribeToShellOperations, type PersistenceMode, type ShellOperationDetail } from '../services/shellEvents';
+import { hasDirtyScopes, markCleanScope, markDirtyScope } from '../services/dirtyState';
 
 export type NotificationTone = 'info' | 'success' | 'warning' | 'error';
 export type SynchronisationStatus = 'local' | 'synchronised' | 'syncing' | 'pending' | 'failed' | 'offline';
@@ -50,19 +51,14 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [syncFailed, setSyncFailed] = useState(false);
   const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string>();
   const [lastSavedVersion, setLastSavedVersion] = useState<number>();
-  const hasPendingChanges = useMemo(() => Object.values(dirtyScopes).some((scope) => scope.dirty), [dirtyScopes]);
+  const hasPendingChanges = useMemo(() => hasDirtyScopes(dirtyScopes), [dirtyScopes]);
 
   const markDirty = useCallback((scope: DirtyScope) => {
-    setDirtyScopes((current) => ({ ...current, [scope.id]: { ...scope, dirty: true } }));
+    setDirtyScopes((current) => markDirtyScope(current, scope));
   }, []);
 
   const markClean = useCallback((scopeId: string) => {
-    setDirtyScopes((current) => {
-      if (!current[scopeId]) return current;
-      const next = { ...current };
-      delete next[scopeId];
-      return next;
-    });
+    setDirtyScopes((current) => markCleanScope(current, scopeId));
   }, []);
 
   const clearAll = useCallback(() => setDirtyScopes({}), []);
@@ -125,7 +121,7 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const fallbackKind = classifyOperationalFailure(`${operation.title} ${operation.message || ''}`);
     notify({
       title: operation.title || `${fallbackKind} failed`,
-      message: operation.message || 'The operation did not complete. Review the record and try again.',
+      message: `${operation.message || 'The operation did not complete. Review the record and try again.'}${operation.correlationId ? ` Support reference: ${operation.correlationId}.` : ''}`,
       tone: 'error',
     });
   }), [markClean, notify]);
@@ -141,19 +137,6 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, [notify]);
-
-  useEffect(() => {
-    if (!hasPendingChanges) return undefined;
-    const handlePopState = () => {
-      if (!window.confirm('You have unsaved changes. Leave this page and discard them?')) {
-        window.history.go(1);
-      } else {
-        clearAll();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [clearAll, hasPendingChanges]);
 
   const synchronisationStatus = useMemo<SynchronisationStatus>(() => {
     if (!online) return 'offline';

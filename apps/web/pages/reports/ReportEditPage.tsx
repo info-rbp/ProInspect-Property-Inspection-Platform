@@ -1,19 +1,18 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import ReportBuilder from '../../components/reports/ReportBuilder';
-import { useShell } from '../../contexts/ShellContext';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
 
 const ReportEditPage: React.FC = () => {
-  const { setHasPendingChanges } = useShell();
-
-  useEffect(() => {
-    setHasPendingChanges(false);
-    return () => setHasPendingChanges(false);
-  }, [setHasPendingChanges]);
-
-  const markPending = () => setHasPendingChanges(true);
+  const { reportId } = useParams<{ reportId: string }>();
+  const { formProps } = useDirtyForm({
+    scopeId: `report:${reportId ?? 'new'}`,
+    entityType: 'report',
+    entityId: reportId && reportId !== 'new' ? reportId : undefined,
+  });
 
   return (
-    <div onChangeCapture={markPending} onInputCapture={markPending}>
+    <div {...formProps}>
       <ReportBuilder />
     </div>
   );

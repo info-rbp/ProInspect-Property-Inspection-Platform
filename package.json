@@ -3,12 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "npm run dev --workspace @pcr/web",
     "dev:api": "npm run dev --workspace @pcr/api",
     "dev:local": "node scripts/dev-local.mjs",
+    "seed:staging": "node scripts/seed-staging.mjs",
     "emulators": "firebase emulators:start --config infrastructure/firebase/firebase.json --import=.firebase-emulator-data --export-on-exit=.firebase-emulator-data",
     "build": "npm run build:packages && npm run build:apps",
     "build:packages": "npm run build --workspace @pcr/domain && npm run build --workspace @pcr/config && npm run build --workspace @pcr/validation && npm run build --workspace @pcr/templates && npm run build --workspace @pcr/testing && npm run build --workspace @pcr/ui",
@@ -39,6 +43,7 @@
     "react-router-dom": "^7.17.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.25.1",
     "@firebase/rules-unit-testing": "^5.0.1",
     "@playwright/test": "^1.55.0",

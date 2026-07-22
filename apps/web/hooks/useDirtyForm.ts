@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, type SyntheticEvent } from 'react';
 import { useShell, type DirtyEntityType } from '../contexts/ShellContext';
 
 export interface UseDirtyFormOptions {
@@ -13,11 +13,16 @@ export const useDirtyForm = ({ scopeId, entityType, entityId }: UseDirtyFormOpti
     markScopeDirty({ id: scopeId, entityType, entityId, dirty: true });
   }, [entityId, entityType, markScopeDirty, scopeId]);
   const markClean = useCallback(() => markScopeClean(scopeId), [markScopeClean, scopeId]);
+  const handleDirtyCapture = useCallback((event: SyntheticEvent<HTMLElement>) => {
+    const owner = (event.target as HTMLElement).closest<HTMLElement>('[data-dirty-scope]');
+    if (owner && owner.dataset.dirtyScope !== scopeId) return;
+    markDirty();
+  }, [markDirty, scopeId]);
 
   return useMemo(() => ({
     dirty: Boolean(dirtyScopes[scopeId]?.dirty),
     markDirty,
     markClean,
-    formProps: { onChangeCapture: markDirty, onInputCapture: markDirty },
-  }), [dirtyScopes, markClean, markDirty, scopeId]);
+    formProps: { 'data-dirty-scope': scopeId, onChangeCapture: handleDirtyCapture, onInputCapture: handleDirtyCapture },
+  }), [dirtyScopes, handleDirtyCapture, markClean, markDirty, scopeId]);
 };

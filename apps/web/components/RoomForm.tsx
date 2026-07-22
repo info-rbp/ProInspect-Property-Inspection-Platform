@@ -5,6 +5,8 @@ import { generateId, processImageFile } from '../utils';
 import { generateItemComment, generateOverallComment, generateImageTags, generateBatchRoomAnalysis, discoverRoomItems } from '../services/geminiService';
 import { isAiConfigured } from '../services/configService';
 import { validateImageFiles } from '../services/validationService';
+import { useShell } from '../contexts/ShellContext';
+import { runShellOperation } from '../services/runShellOperation';
 
 interface RoomFormProps {
   room: Room;
@@ -91,6 +93,10 @@ const PhotoThumbnail: React.FC<{ photo: Photo; isPending?: boolean; showTags?: b
 };
 
 const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousReport, previousReportNotes }) => {
+  const { notify } = useShell();
+  const notifyError = (message: string, title = 'Action could not be completed') => notify({ title, message, tone: 'error' });
+  const notifyInfo = (message: string, title = 'Action required') => notify({ title, message, tone: 'info' });
+  const runAnalysis = <T,>(title: string, action: () => Promise<T>) => runShellOperation({ kind: 'analysis', title, source: room.id, entityType: 'report', entityId: room.id, action: 'analyse' }, action);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const processingRef = useRef(false);
   const [loadingItems, setLoadingItems] = useState<Record<string, string>>({});
@@ -148,14 +154,14 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
 
   const requireAi = (): boolean => {
     if (aiConfigured) return true;
-    alert('AI features are disabled until a Gemini API key is added in Settings.');
+    notifyInfo('AI features are disabled until a Gemini API key is added in Settings.', 'AI unavailable');
     return false;
   };
 
   const addFilesToQueue = (files: File[]) => {
     const { validFiles, errors } = validateImageFiles(files, room.photos.length + pendingPhotos.length + processingQueue.length);
     if (errors.length > 0) {
-      alert(errors.join('\n'));
+      notifyError(errors.join('\n'), 'Photo selection needs attention');
     }
     if (validFiles.length === 0) return;
     const newQueueItems: QueueItem[] = validFiles.map((file) => ({ id: generateId(), file, status: 'pending' }));
@@ -220,13 +226,13 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
       const targetPhotos = photosToTag.length > 0 ? photosToTag : room.photos;
       let updatedPhotos = [...room.photos];
       for (const photo of targetPhotos) {
-        const tags = await generateImageTags(photo);
+        const tags = await runAnalysis('AI photo tagging', () => generateImageTags(photo));
         updatedPhotos = updatedPhotos.map((candidate) => candidate.id === photo.id ? { ...candidate, tags } : candidate);
       }
       onUpdate({ ...room, photos: updatedPhotos });
     } catch (error) {
       console.error('Auto-tagging failed', error);
-      alert('Auto-tagging failed. Review the AI key and try again.');
+      notifyError('Auto-tagging failed. Review the AI key and try again.', 'AI auto-tagging failed');
     } finally {
       setIsAutoTagging(false);
     }
@@ -234,7 +240,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
 
   const handleAutoDetectItems = async () => {
     if (!requireAi() || room.photos.length === 0) {
-      if (room.photos.length === 0) alert('Upload room photos before running item detection.');
+      if (room.photos.length === 0) notifyInfo('Upload room photos before running item detection.', 'Photos required');
       return;
     }
     if (!window.confirm('Scan room photos for visible fixtures and update the item list automatically?')) return;
@@ -242,9 +248,9 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
     setIsDiscovering(true);
     setGeneratingOverall('Scanning photos for visible items...');
     try {
-      const discoveredItems = await discoverRoomItems(room.name, room.photos);
+      const discoveredItems = await runAnalysis('AI item discovery', () => discoverRoomItems(room.name, room.photos));
       if (discoveredItems.length === 0) {
-        alert('No items were confidently detected. Try using clearer photos.');
+        notifyInfo('No items were confidently detected. Try using clearer photos.', 'No items detected');
         return;
       }
 
@@ -267,10 +273,10 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
       });
 
       onUpdate({ ...room, items: currentItems });
-      alert(`Scan complete. Added: ${addedCount}. Updated: ${updatedCount}.`);
+      notify({ title: 'Scan complete', message: `Added: ${addedCount}. Updated: ${updatedCount}.`, tone: 'success' });
     } catch (error) {
       console.error('Discovery failed', error);
-      alert('Item discovery failed. Review the AI configuration and try again.');
+      notifyError('Item discovery failed. Review the AI configuration and try again.', 'Item discovery failed');
     } finally {
       setIsDiscovering(false);
       setGeneratingOverall(null);
@@ -281,7 +287,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
     event.preventDefault();
     event.stopPropagation();
     if (!requireAi() || room.photos.length === 0) {
-      if (room.photos.length === 0) alert('Please upload photos first.');
+      if (room.photos.length === 0) notifyInfo('Please upload photos first.', 'Photos required');
       return;
     }
     if (!window.confirm('Generate room overview and item commentary from all room photos?')) return;
@@ -299,7 +305,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
       for (let index = 0; index < currentRoomState.photos.length; index += 5) {
         const batchPhotos = currentRoomState.photos.slice(index, index + 5);
         setGeneratingOverall(`Analysing photo batch ${Math.ceil((index + 1) / 5)} of ${Math.ceil(currentRoomState.photos.length / 5)}...`);
-        const analysisResult = await generateBatchRoomAnalysis(currentRoomState.name, batchPhotos, currentRoomState.items, currentRoomState.overallComment, previousReport?.file, previousReportNotes);
+        const analysisResult = await runAnalysis('AI room analysis', () => generateBatchRoomAnalysis(currentRoomState.name, batchPhotos, currentRoomState.items, currentRoomState.overallComment, previousReport?.file, previousReportNotes));
         const newOverall = analysisResult.overallComment || currentRoomState.overallComment;
         const newItems = currentRoomState.items.map((item) => {
           const update = analysisResult.items?.find((candidate) => candidate.id === item.name);
@@ -311,7 +317,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
       syncUpdate({ status: 'analyzed' });
     } catch (error) {
       console.error('Bulk generation failed', error);
-      alert('Bulk generation was interrupted. Review your AI configuration and try again.');
+      notifyError('Bulk generation was interrupted. Review your AI configuration and try again.', 'AI generation interrupted');
     } finally {
       setIsBulkGenerating(false);
       setGeneratingOverall(null);
@@ -322,7 +328,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
   const generateAIComment = async (item: InspectionItem) => {
     if (!requireAi()) return;
     if (room.photos.length === 0) {
-      alert('Please upload photos first.');
+      notifyInfo('Please upload photos first.', 'Photos required');
       return;
     }
 
@@ -331,13 +337,13 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
       for (let index = 0; index < room.photos.length; index += 5) {
         setLoadingItems((prev) => ({ ...prev, [item.id]: `Analysing photos ${index + 1}-${Math.min(index + 5, room.photos.length)} of ${room.photos.length}...` }));
         const batchPhotos = room.photos.slice(index, index + 5);
-        const result = await generateItemComment(item.name, room.name, batchPhotos, currentText, previousReport?.file, previousReportNotes);
+        const result = await runAnalysis('AI item commentary', () => generateItemComment(item.name, room.name, batchPhotos, currentText, previousReport?.file, previousReportNotes));
         currentText = result.comment;
         updateItem(item.id, { comment: result.comment, isClean: result.isClean, isUndamaged: result.isUndamaged, isWorking: result.isWorking });
       }
     } catch (error) {
       console.error('Item generation failed', error);
-      alert('Failed to generate the item comment.');
+      notifyError('Failed to generate the item comment.', 'AI comment failed');
     } finally {
       setLoadingItems((prev) => {
         const next = { ...prev };
@@ -350,7 +356,7 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
   const handleGenerateOverall = async () => {
     if (!requireAi()) return;
     if (room.photos.length === 0) {
-      alert('Please upload photos first.');
+      notifyInfo('Please upload photos first.', 'Photos required');
       return;
     }
 
@@ -359,12 +365,12 @@ const RoomForm: React.FC<RoomFormProps> = ({ room, onUpdate, onDelete, previousR
       for (let index = 0; index < room.photos.length; index += 5) {
         setGeneratingOverall(`Analysing photos ${index + 1}-${Math.min(index + 5, room.photos.length)} of ${room.photos.length}...`);
         const batchPhotos = room.photos.slice(index, index + 5);
-        currentText = await generateOverallComment(room.name, batchPhotos, currentText, previousReport?.file, previousReportNotes);
+        currentText = await runAnalysis('AI room overview', () => generateOverallComment(room.name, batchPhotos, currentText, previousReport?.file, previousReportNotes));
         onUpdate({ ...room, overallComment: currentText });
       }
     } catch (error) {
       console.error('Overall generation failed', error);
-      alert('Failed to generate the room overview.');
+      notifyError('Failed to generate the room overview.', 'AI overview failed');
     } finally {
       setGeneratingOverall(null);
     }

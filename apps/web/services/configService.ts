@@ -1,5 +1,5 @@
 import firebaseAppletConfig from '../../../firebase-applet-config.json';
-import { createShellOperationId, emitShellOperation } from './shellEvents';
+import { runShellOperation } from './runShellOperation';
 
 export interface RuntimeConfig {
   apiKey: string;
@@ -58,18 +58,15 @@ export const getRuntimeConfig = (): RuntimeConfig => {
   }
 };
 
-export const saveRuntimeConfig = (config: RuntimeConfig): RuntimeConfig => {
+export const saveRuntimeConfig = (config: RuntimeConfig): Promise<RuntimeConfig> => {
   const sanitized = sanitizeRuntimeConfig(config);
-  const operationId = createShellOperationId('runtime-config');
-  emitShellOperation({ id: operationId, kind: 'save', status: 'started', title: 'Saving runtime configuration', persistence: 'local', source: CONFIG_KEY });
-  try {
+  return runShellOperation({
+    kind: 'save', title: 'Runtime configuration saved', persistence: 'local', source: CONFIG_KEY,
+    dirtyScopeId: 'settings:platform', entityType: 'settings', entityId: 'platform', action: 'update', announceSuccess: true,
+  }, async () => {
     if (typeof window !== 'undefined') window.localStorage.setItem(CONFIG_KEY, JSON.stringify(sanitized));
-    emitShellOperation({ id: operationId, kind: 'save', status: 'succeeded', title: 'Runtime configuration saved', persistence: 'local', source: CONFIG_KEY, clearDirty: true, announceSuccess: true });
     return sanitized;
-  } catch (error) {
-    emitShellOperation({ id: operationId, kind: 'save', status: 'failed', title: 'Runtime configuration save failed', message: error instanceof Error ? error.message : 'The settings could not be saved.', persistence: 'local', source: CONFIG_KEY });
-    throw error;
-  }
+  });
 };
 
 export const clearRuntimeConfig = (): void => {

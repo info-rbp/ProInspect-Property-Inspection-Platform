@@ -22,6 +22,10 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-restricted-globals': ['error', {
+        name: 'alert',
+        message: 'Use typed shell operation events or notifications.',
+      }],
     },
   },
 );

@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
-export type SyncState = 'local' | 'queued' | 'syncing' | 'synced' | 'conflict' | 'failed';
+export type SyncState = 'local' | 'queued' | 'syncing' | 'uploading' | 'synced' | 'conflict' | 'failed';
 
 export interface OfflineJobSnapshot {
   id: string;
@@ -136,4 +136,15 @@ export function installReconnectSync(sync: () => Promise<void>): () => void {
   const listener = () => { void sync(); };
   window.addEventListener('online', listener);
   return () => window.removeEventListener('online', listener);
+}
+
+export async function purgeOfflineWorkspace(): Promise<void> {
+  const db = await database();
+  await Promise.all([
+    db.clear('jobs'),
+    db.clear('drafts'),
+    db.clear('photos'),
+    db.clear('outbox'),
+    db.clear('confirmations'),
+  ]);
 }

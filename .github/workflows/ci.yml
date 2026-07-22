@@ -94,5 +94,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm install --ignore-scripts --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Full Chromium browser suite
+        run: npm run test:e2e -- --project=chromium
+      - name: Targeted cross-browser shell and accessibility suite
+        run: npm run test:e2e -- --project=firefox --project=webkit --project=mobile-chrome --project=mobile-safari

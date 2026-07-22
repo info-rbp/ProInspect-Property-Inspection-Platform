@@ -8,6 +8,7 @@ import { listReportIndexes, upsertReportIndexFromReport } from '../../services/p
 import { DEFAULT_AGENCY_ID } from '../../services/platform/userProfileService';
 import { saveReportToDB } from '../../services/storageService';
 import { generateId } from '../../utils';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
 
 const reportTypes = ['Property Condition Report', 'Routine Inspection', 'Exit Inspection'];
 
@@ -23,6 +24,7 @@ const ReportsPage: React.FC = () => {
     tenantName: '',
     clientName: '',
   });
+  const dirtyForm = useDirtyForm({ scopeId: 'report:new', entityType: 'report' });
 
   const loadData = async () => {
     const [nextReports, nextProperties] = await Promise.all([listReportIndexes(), listProperties()]);
@@ -56,7 +58,7 @@ const ReportsPage: React.FC = () => {
       rooms: [],
     };
 
-    const savedReport = await saveReportToDB(report);
+    const savedReport = await saveReportToDB(report, 'report:new');
     await upsertReportIndexFromReport(savedReport);
     setIsCreating(false);
     await loadData();
@@ -76,7 +78,7 @@ const ReportsPage: React.FC = () => {
       </div>
 
       {isCreating && (
-        <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-3">
+        <form {...dirtyForm.formProps} onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-3">
           <select value={form.propertyId} onChange={(event) => setForm((prev) => ({ ...prev, propertyId: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm">
             <option value="">No property selected</option>
             {properties.map((property) => <option key={property.id} value={property.id}>{property.address}</option>)}
@@ -89,7 +91,7 @@ const ReportsPage: React.FC = () => {
           <input placeholder="Client / landlord" value={form.clientName} onChange={(event) => setForm((prev) => ({ ...prev, clientName: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
           <div className="flex gap-2">
             <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create</button>
-            <button type="button" onClick={() => setIsCreating(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
+            <button type="button" onClick={() => { dirtyForm.markClean(); setIsCreating(false); }} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
           </div>
         </form>
       )}

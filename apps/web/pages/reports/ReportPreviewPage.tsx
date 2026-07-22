@@ -5,7 +5,7 @@ import PDFPreview from '../../components/PDFPreview';
 import { ErrorState, LoadingState } from '../../components/layout/AsyncState';
 import type { ReportData } from '../../types';
 import { loadReportFromDB } from '../../services/storageService';
-import { createShellOperationId, emitShellOperation } from '../../services/shellEvents';
+import { runShellOperation } from '../../services/runShellOperation';
 
 interface PreviewLocationState {
   report?: ReportData;
@@ -25,19 +25,18 @@ const ReportPreviewPage: React.FC = () => {
         setIsLoading(false);
         return;
       }
-      const operationId = createShellOperationId('preview-load');
-      emitShellOperation({ id: operationId, kind: 'pdf', status: 'started', title: 'Loading report preview', source: reportId });
       setIsLoading(true);
       setLoadError(undefined);
       try {
-        const loaded = await loadReportFromDB(reportId);
-        setReport(loaded || null);
-        if (!loaded) throw new Error('The report could not be found.');
-        emitShellOperation({ id: operationId, kind: 'pdf', status: 'succeeded', title: 'Report preview ready', source: reportId });
+        const loaded = await runShellOperation({ kind: 'pdf', title: 'Loading report preview', source: reportId, entityType: 'report', entityId: reportId, action: 'preview' }, async () => {
+          const found = await loadReportFromDB(reportId);
+          if (!found) throw new Error('The report could not be found.');
+          return found;
+        });
+        setReport(loaded);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'The preview could not be loaded.';
         setLoadError(message);
-        emitShellOperation({ id: operationId, kind: 'pdf', status: 'failed', title: 'Preview failed', message, source: reportId });
       } finally {
         setIsLoading(false);
       }

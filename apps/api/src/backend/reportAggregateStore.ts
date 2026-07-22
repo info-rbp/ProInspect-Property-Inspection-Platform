@@ -197,7 +197,13 @@ export class FirestoreReportAggregateStore implements ReportAggregateStore {
       const existing = existingSnapshot.exists ? existingSnapshot.data() as ReportMetadataRecord : undefined;
       if (existing && IMMUTABLE_REPORT_STATUSES.has(existing.lifecycleStatus)) throw error('REPORT_IMMUTABLE', 409, 'Finalised report data cannot be modified.');
       if (existing && expectedVersion === undefined) throw error('EXPECTED_VERSION_REQUIRED', 400, 'expectedVersion is required when updating a report.');
-      if (existing && existing.version !== expectedVersion) throw error('VERSION_CONFLICT', 409, 'The report has changed. Reload and retry.', { expectedVersion, actualVersion: existing.version });
+      if (existing && existing.version !== expectedVersion) throw error('VERSION_CONFLICT', 409, 'The report has changed. Reload and retry.', {
+        expectedVersion,
+        actualVersion: existing.version,
+        serverVersion: existing.version,
+        serverRecord: existing,
+        submittedRecord: aggregate.report,
+      });
       if (!existing && expectedVersion !== undefined) throw error('VERSION_CONFLICT', 409, 'The report does not yet exist.');
 
       const oldAreaSnapshot = await transaction.get(reference.collection('areas'));

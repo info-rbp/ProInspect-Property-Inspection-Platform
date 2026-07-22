@@ -80,19 +80,37 @@ function reportRoute(urlValue: string | undefined): { reportId?: string; command
 export function createRequestHandler(dependencies: ApiDependencies = createSecurityDependencies()) {
   return async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const correlationId = req.headers['x-correlation-id']?.toString() ?? randomUUID();
+    const startedAt = Date.now();
+    const requestUrl = new URL(req.url ?? '/', 'http://localhost');
+    const entityId = requestUrl.pathname.split('/').filter(Boolean)[3];
+    const sendResponse = (response: ApiResponse): void => {
+      const body = response.body as { meta?: { actor?: string }; principal?: { uid?: string }; error?: { code?: string } };
+      console.log(JSON.stringify({
+        severity: response.status >= 500 ? 'ERROR' : response.status >= 400 ? 'WARNING' : 'INFO',
+        correlationId,
+        agencyId: req.headers['x-agency-id']?.toString() ?? 'unresolved',
+        actorId: body.meta?.actor ?? body.principal?.uid ?? 'unresolved',
+        operation: `${req.method ?? 'UNKNOWN'} ${requestUrl.pathname}`,
+        entityId: entityId ?? null,
+        durationMs: Date.now() - startedAt,
+        status: response.status,
+        errorCode: body.error?.code ?? null,
+      }));
+      send(res, response, correlationId);
+    };
     const rateKey = `${req.socket.remoteAddress ?? 'unknown'}:${req.url ?? '/'}`;
     if (!limiter.consume(rateKey)) {
-      send(res, { status: 429, body: { error: { code: 'RATE_LIMITED', message: 'Too many requests.', status: 429, correlationId } } }, correlationId);
+      sendResponse({ status: 429, body: { error: { code: 'RATE_LIMITED', message: 'Too many requests.', status: 429, correlationId } } });
       return;
     }
 
     try {
       if (req.method === 'GET' && req.url === '/health') {
-        send(res, { status: 200, body: { status: 'ok', service: 'pcr-api', version: 'v1', correlationId } }, correlationId);
+        sendResponse({ status: 200, body: { status: 'ok', service: 'pcr-api', version: 'v1', correlationId } });
         return;
       }
       if (req.method === 'GET' && req.url === '/api/v1/openapi.json') {
-        send(res, { status: 200, body: buildOpenApiDocument() }, correlationId);
+        sendResponse({ status: 200, body: buildOpenApiDocument() });
         return;
       }
       if (req.method === 'POST' && req.url === '/v1/security/authorise') {
@@ -100,7 +118,7 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
         const capability = body.capability as SecurityCapability;
         const target = body.target as AuthorisationTarget;
         const principal = await authenticateAndAuthorise(req, dependencies, capability, target, correlationId);
-        send(res, { status: 200, body: { principal: { uid: principal.uid, agencyId: principal.agencyId, role: principal.role }, allowed: true } }, correlationId);
+        sendResponse({ status: 200, body: { principal: { uid: principal.uid, agencyId: principal.agencyId, role: principal.role }, allowed: true } });
         return;
       }
 
@@ -117,21 +135,21 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
           specialReportRoute.command,
         );
         if (reportResponse) {
-          send(res, reportResponse, correlationId);
+          sendResponse(reportResponse);
           return;
         }
       }
 
       const routed = await routeApiRequest(req, res, dependencies, correlationId);
       if (routed) {
-        send(res, routed, correlationId);
+        sendResponse(routed);
         return;
       }
 
       const error: DomainErrorShape = { code: 'NOT_FOUND', message: 'Route not found.', status: 404, correlationId };
-      send(res, { status: 404, body: { error } }, correlationId);
+      sendResponse({ status: 404, body: { error } });
     } catch (error) {
-      send(res, errorResponse(error, correlationId), correlationId);
+      sendResponse(errorResponse(error, correlationId));
     }
   };
 }

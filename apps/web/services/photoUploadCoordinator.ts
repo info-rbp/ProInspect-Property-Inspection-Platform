@@ -1,4 +1,5 @@
 import { pendingPhotos, updatePhotoProgress, type LocalPhotoQueueItem } from './offlineWorkspace';
+import { runShellOperation } from './runShellOperation';
 
 export interface UploadSessionResponse {
   id: string;
@@ -55,7 +56,8 @@ async function uploadChunk(item: LocalPhotoQueueItem, uploadUrl: string, start: 
 
 export async function syncPhoto(item: LocalPhotoQueueItem): Promise<void> {
   if (!navigator.onLine) return;
-  try {
+  return runShellOperation({ kind: 'upload', title: 'Synchronising photo', source: item.id, persistence: 'cloud', entityType: 'photo', entityId: item.id, action: 'upload', attempt: item.attempts + 1 }, async () => {
+    try {
     let uploadUrl: string | undefined = item.resumableUploadUrl;
     if (!item.uploadSessionId || !uploadUrl) {
       const session = await createSession(item);
@@ -77,14 +79,18 @@ export async function syncPhoto(item: LocalPhotoQueueItem): Promise<void> {
       uploadedBytes = await uploadChunk(item, activeUploadUrl, uploadedBytes);
       await updatePhotoProgress(item.id, uploadedBytes, uploadedBytes === item.size ? 'synced' : 'uploading');
     }
-  } catch (error) {
-    await updatePhotoProgress(item.id, item.uploadedBytes, 'failed', {
-      attempts: item.attempts + 1,
-      error: error instanceof Error ? error.message : 'Upload failed.',
-    });
-  }
+    } catch (error) {
+      await updatePhotoProgress(item.id, item.uploadedBytes, 'failed', {
+        attempts: item.attempts + 1,
+        error: error instanceof Error ? error.message : 'Upload failed.',
+      });
+      throw error;
+    }
+  });
 }
 
 export async function syncPendingPhotos(jobId?: string): Promise<void> {
-  for (const item of await pendingPhotos(jobId)) await syncPhoto(item);
+  for (const item of await pendingPhotos(jobId)) {
+    try { await syncPhoto(item); } catch { /* Keep processing independent uploads. */ }
+  }
 }

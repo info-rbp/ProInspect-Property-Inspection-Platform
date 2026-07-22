@@ -5,6 +5,7 @@ import type { PropertyRecord, Agency } from '../../types/platform';
 import { createProperty, listProperties } from '../../services/platform/propertyService';
 import { listAgencies, createAgency } from '../../services/platform/agencyService';
 import { DEFAULT_AGENCY_ID } from '../../services/platform/userProfileService';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
 
 const propertyTypes: PropertyRecord['propertyType'][] = ['house', 'unit', 'apartment', 'townhouse', 'villa', 'other'];
 
@@ -46,6 +47,8 @@ const PropertiesPage: React.FC = () => {
   });
 
   const [dragActive, setDragActive] = useState(false);
+  const propertyDirty = useDirtyForm({ scopeId: 'property:new', entityType: 'property' });
+  const agencyDirty = useDirtyForm({ scopeId: 'settings:agency:new', entityType: 'settings' });
 
   const loadData = async () => {
     const [propList, agencyList] = await Promise.all([
@@ -220,13 +223,13 @@ const PropertiesPage: React.FC = () => {
             </h2>
             <button
               type="button"
-              onClick={() => setIsCreatingAgency(false)}
+              onClick={() => { agencyDirty.markClean(); setIsCreatingAgency(false); }}
               className="text-blue-500 hover:text-blue-700 text-sm font-medium"
             >
               Cancel
             </button>
           </div>
-          <form onSubmit={handleAgencySubmit} className="grid gap-4 md:grid-cols-2">
+          <form {...agencyDirty.formProps} onSubmit={handleAgencySubmit} className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-blue-800 uppercase mb-1">Agency Name *</label>
               <input
@@ -283,7 +286,7 @@ const PropertiesPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setIsCreatingAgency(false)}
+                onClick={() => { agencyDirty.markClean(); setIsCreatingAgency(false); }}
                 className="rounded-lg border border-blue-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100/50 transition"
               >
                 Cancel
@@ -295,7 +298,7 @@ const PropertiesPage: React.FC = () => {
 
       {/* CREATE PROPERTY PANEL */}
       {isCreating && (
-        <form onSubmit={handlePropertySubmit} className="rounded-xl border border-gray-200 bg-white p-6 shadow-md animate-in fade-in slide-in-from-top-4 duration-200 space-y-6">
+        <form {...propertyDirty.formProps} onSubmit={handlePropertySubmit} className="rounded-xl border border-gray-200 bg-white p-6 shadow-md animate-in fade-in slide-in-from-top-4 duration-200 space-y-6">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <h2 className="text-lg font-semibold text-gray-950 flex items-center gap-2">
               <Home size={20} className="text-gray-700" />
@@ -303,7 +306,7 @@ const PropertiesPage: React.FC = () => {
             </h2>
             <button
               type="button"
-              onClick={() => setIsCreating(false)}
+              onClick={() => { propertyDirty.markClean(); setIsCreating(false); }}
               className="text-gray-500 hover:text-gray-700 text-sm font-medium"
             >
               Cancel
@@ -564,7 +567,7 @@ const PropertiesPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setIsCreating(false)}
+              onClick={() => { propertyDirty.markClean(); setIsCreating(false); }}
               className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel

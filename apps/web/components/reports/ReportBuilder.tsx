@@ -11,6 +11,9 @@ import { MAX_ROOMS_PER_REPORT, sanitizeReportData, validatePreviousReportFile, v
 import { getReportDisplayTitle, supportsComparison } from '../../services/reportPresentation';
 import { logAuditEvent } from '../../services/platform/auditService';
 import { upsertReportIndexFromReport } from '../../services/platform/reportIndexService';
+import { useShell } from '../../contexts/ShellContext';
+import { useDirtyForm } from '../../hooks/useDirtyForm';
+import { runShellOperation } from '../../services/runShellOperation';
 
 const createInitialReport = (id = generateId()): ReportData => ({
   id,
@@ -48,6 +51,10 @@ const ReportBuilder: React.FC = () => {
   const heroInputRef = useRef<HTMLInputElement>(null);
   const [isProcessingHero, setIsProcessingHero] = useState(false);
   const previousReportRef = useRef<HTMLInputElement>(null);
+  const { notify } = useShell();
+  const settingsDirty = useDirtyForm({ scopeId: 'settings:platform', entityType: 'settings', entityId: 'platform' });
+  const notifyError = (message: string, title = 'Action could not be completed') => notify({ title, message, tone: 'error' });
+  const notifyInfo = (message: string, title = 'Action required') => notify({ title, message, tone: 'info' });
 
   const aiConfigured = isAiConfigured();
   const cloudConfigured = isFirebaseConfigured();
@@ -175,7 +182,7 @@ const ReportBuilder: React.FC = () => {
     }));
   };
 
-  const handleSaveConfig = (event: React.FormEvent) => {
+  const handleSaveConfig = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (showFirebaseRuntimeFields && configForm.enableCloudSync) {
@@ -183,12 +190,12 @@ const ReportBuilder: React.FC = () => {
         .filter((key) => !configForm[key as keyof RuntimeConfig]);
 
       if (missingFields.length > 0) {
-        alert('Enable Cloud Sync only after all Firebase fields are provided.');
+        notifyInfo('Enable Cloud Sync only after all Firebase fields are provided.');
         return;
       }
     }
 
-    saveRuntimeConfig(configForm);
+    await saveRuntimeConfig(configForm);
     window.location.reload();
   };
 
@@ -204,7 +211,7 @@ const ReportBuilder: React.FC = () => {
     const { errors } = validateReport(sanitizedReport);
 
     if (errors.length > 0) {
-      alert(errors.join('\n'));
+      notifyError(errors.join('\n'), 'Report needs attention');
       return;
     }
 
@@ -226,10 +233,10 @@ const ReportBuilder: React.FC = () => {
         },
       });
       const destination = cloudConfigured ? 'Cloud' : 'Device';
-      alert(`Report saved to ${destination} successfully.`);
+      notify({ title: 'Report saved', message: `Saved to ${destination} successfully.`, tone: 'success' });
     } catch (error) {
       console.error('Save failed', error);
-      alert('Failed to save the report. Review your runtime settings and try again.');
+      notifyError('Failed to save the report. Review your runtime settings and try again.', 'Report save failed');
     } finally {
       setIsSaving(false);
     }
@@ -242,7 +249,7 @@ const ReportBuilder: React.FC = () => {
       setSavedReports(await getAllSavedReports());
     } catch (error) {
       console.error('Failed to list reports', error);
-      alert('Failed to access saved reports.');
+      notifyError('Failed to access saved reports.', 'Saved reports unavailable');
     } finally {
       setIsLoadingList(false);
     }
@@ -257,7 +264,7 @@ const ReportBuilder: React.FC = () => {
     try {
       const loadedReport = await loadReportFromDB(id);
       if (!loadedReport) {
-        alert('Report not found or failed to load.');
+        notifyError('Report not found or failed to load.', 'Report unavailable');
         return;
       }
 
@@ -277,7 +284,7 @@ const ReportBuilder: React.FC = () => {
       setShowLoadModal(false);
     } catch (error) {
       console.error('Load failed', error);
-      alert('Failed to load the report.');
+      notifyError('Failed to load the report.', 'Report load failed');
     } finally {
       setIsHydrating(false);
     }
@@ -294,19 +301,19 @@ const ReportBuilder: React.FC = () => {
       setSavedReports((prev) => prev.filter((savedReport) => savedReport.id !== id));
     } catch (error) {
       console.error('Delete failed', error);
-      alert('Failed to delete the report.');
+      notifyError('Failed to delete the report.', 'Report deletion failed');
     }
   };
 
   const handleGenerateFullReport = async () => {
     if (!aiConfigured) {
-      alert('AI features are disabled until a Gemini API key is added in Settings.');
+      notifyInfo('AI features are disabled until a Gemini API key is added in Settings.', 'AI unavailable');
       return;
     }
 
     const roomsWithPhotos = report.rooms.filter((room) => room.photos.length > 0);
     if (roomsWithPhotos.length === 0) {
-      alert('No rooms have photos. Upload room photos before running AI analysis.');
+      notifyInfo('No rooms have photos. Upload room photos before running AI analysis.', 'Photos required');
       return;
     }
 
@@ -326,6 +333,7 @@ const ReportBuilder: React.FC = () => {
     setGenerationProgress(0);
 
     try {
+      await runShellOperation({ kind: 'analysis', title: 'AI report analysis', source: report.id, entityType: 'report', entityId: report.id, action: 'analyse', announceSuccess: true }, async () => {
       const chunkSize = 5;
       const totalSteps = roomsWithPhotos.length;
 
@@ -395,9 +403,10 @@ const ReportBuilder: React.FC = () => {
           notification.close();
         };
       }
+      });
     } catch (error) {
       console.error('Global generation failed', error);
-      alert('AI generation failed. Review your API key, image selection, and quota, then try again.');
+      notifyError('AI generation failed. Review your API key, image selection, and quota, then try again.', 'AI analysis failed');
     } finally {
       setIsGlobalGenerating(false);
       setGlobalGenerationStatus('');
@@ -410,7 +419,7 @@ const ReportBuilder: React.FC = () => {
     if (event.target.files && event.target.files[0]) {
       setIsProcessingHero(true);
       try {
-        const processedFile = await processImageFile(event.target.files[0]);
+        const processedFile = await runShellOperation({ kind: 'upload', title: 'Cover photo processed', source: report.id, persistence: 'local', entityType: 'report', entityId: report.id, action: 'photo-add' }, () => processImageFile(event.target.files![0]));
         const newPhoto: Photo = {
           id: generateId(),
           file: processedFile,
@@ -419,7 +428,7 @@ const ReportBuilder: React.FC = () => {
         updateReport({ heroPhoto: newPhoto });
       } catch (error) {
         console.error('Hero upload failed', error);
-        alert('Failed to process the cover photo.');
+        notifyError('Failed to process the cover photo.', 'Photo processing failed');
       } finally {
         setIsProcessingHero(false);
         if (heroInputRef.current) heroInputRef.current.value = '';
@@ -439,7 +448,7 @@ const ReportBuilder: React.FC = () => {
       const file = event.target.files[0];
       const errors = validatePreviousReportFile(file);
       if (errors.length > 0) {
-        alert(errors.join('\n'));
+        notifyError(errors.join('\n'), 'Previous report could not be attached');
         return;
       }
 
@@ -465,7 +474,7 @@ const ReportBuilder: React.FC = () => {
     }
 
     if (report.rooms.length >= MAX_ROOMS_PER_REPORT) {
-      alert(`A report can contain at most ${MAX_ROOMS_PER_REPORT} rooms or areas.`);
+      notifyInfo(`A report can contain at most ${MAX_ROOMS_PER_REPORT} rooms or areas.`, 'Room limit reached');
       return;
     }
 
@@ -524,7 +533,7 @@ const ReportBuilder: React.FC = () => {
     const { errors } = validateReport(sanitizedReport);
 
     if (errors.length > 0) {
-      alert(errors.join('\n'));
+      notifyError(errors.join('\n'), 'Report needs attention');
       return;
     }
 
@@ -579,7 +588,7 @@ const ReportBuilder: React.FC = () => {
               Gemini values are stored locally in this browser for the current operator. Firebase is normally configured from deployment environment variables.
             </p>
 
-            <form onSubmit={handleSaveConfig} className="space-y-4">
+            <form {...settingsDirty.formProps} onSubmit={handleSaveConfig} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Gemini API Key</label>
                 <input name="geminiApiKey" value={configForm.geminiApiKey} onChange={handleConfigChange} className="w-full border border-gray-300 rounded p-2 text-sm font-mono" placeholder="Enter your Gemini API key" />

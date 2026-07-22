@@ -1,19 +1,42 @@
 import React, { useEffect, useRef } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useBlocker, useLocation } from 'react-router-dom';
 import { useShell } from '../../contexts/ShellContext';
 import Breadcrumbs from './Breadcrumbs';
 import NotificationCenter from './NotificationCenter';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import SyncQueuePanel from '../sync/SyncQueuePanel';
+import ConflictResolutionDialog from '../sync/ConflictResolutionDialog';
+import { useAuth } from '../../contexts/AuthContext';
+import { installSyncCoordinator } from '../../services/offline/syncCoordinator';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const AppShell: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const drawerRef = useRef<HTMLDivElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
   const { clearAll, hasPendingChanges, mobileNavigationOpen, setMobileNavigationOpen } = useShell();
+  const { currentUser, userProfile } = useAuth();
+  const navigationBlocker = useBlocker(({ currentLocation, nextLocation }) => (
+    hasPendingChanges && `${currentLocation.pathname}${currentLocation.search}${currentLocation.hash}` !== `${nextLocation.pathname}${nextLocation.search}${nextLocation.hash}`
+  ));
+
+  useEffect(() => {
+    if (navigationBlocker.state !== 'blocked') return;
+    if (window.confirm('You have unsaved changes. Leave this page and discard them?')) {
+      clearAll();
+      navigationBlocker.proceed();
+    } else {
+      navigationBlocker.reset();
+    }
+  }, [clearAll, navigationBlocker]);
+
+  useEffect(() => {
+    const agencyId = userProfile?.agencyId;
+    if (!currentUser || !agencyId) return undefined;
+    return installSyncCoordinator(currentUser.uid, agencyId);
+  }, [currentUser, userProfile]);
 
   useEffect(() => {
     setMobileNavigationOpen(false);
@@ -54,26 +77,8 @@ const AppShell: React.FC = () => {
     };
   }, [mobileNavigationOpen, setMobileNavigationOpen]);
 
-  const confirmNavigation = (nextPath: string) => {
-    if (!hasPendingChanges || window.confirm('You have unsaved changes. Leave this page and discard them?')) {
-      clearAll();
-      navigate(nextPath);
-    }
-  };
-
-  const handleNavigationCapture = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const anchor = (event.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
-    if (!anchor || anchor.target === '_blank' || anchor.origin !== window.location.origin) return;
-    const nextPath = `${anchor.pathname}${anchor.search}${anchor.hash}`;
-    const currentPath = `${location.pathname}${location.search}${location.hash}`;
-    if (nextPath === currentPath || !hasPendingChanges) return;
-    event.preventDefault();
-    confirmNavigation(nextPath);
-  };
-
   return (
-    <div onClickCapture={handleNavigationCapture} className="min-h-screen bg-gray-50 text-gray-950 lg:grid lg:grid-cols-[260px_1fr]">
+    <div className="min-h-screen bg-gray-50 text-gray-950 lg:grid lg:grid-cols-[260px_1fr]">
       <a href="#main-content" className="sr-only z-[100] rounded bg-gray-950 px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
       <div className="hidden lg:block"><Sidebar /></div>
       {mobileNavigationOpen ? (
@@ -90,6 +95,8 @@ const AppShell: React.FC = () => {
         </main>
       </div>
       <NotificationCenter />
+      <SyncQueuePanel />
+      <ConflictResolutionDialog />
     </div>
   );
 };
