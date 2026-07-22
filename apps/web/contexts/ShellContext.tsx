@@ -103,6 +103,38 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }), [notify]);
 
   useEffect(() => {
+    const nativeAlert = window.alert.bind(window);
+    window.alert = (value?: unknown) => {
+      const message = String(value ?? '');
+      const normalized = message.toLowerCase();
+      if (/failed|failure|error|unable/.test(normalized)) {
+        const kind = classifyOperationalFailure(message);
+        if (kind === 'save' || kind === 'sync') setSyncFailed(true);
+        notify({ title: `${kind === 'analysis' ? 'AI analysis' : kind} failed`, message, tone: 'error' });
+      } else if (/report saved/.test(normalized)) {
+        const mode: PersistenceMode = /cloud/.test(normalized) ? 'cloud' : 'local';
+        setPersistenceMode(mode);
+        setLastSuccessfulSyncAt(new Date().toISOString());
+        setSyncFailed(false);
+        setHasPendingChanges(false);
+        notify({ title: 'Report saved', message, tone: 'success' });
+      }
+      nativeAlert(value);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const message = event.reason instanceof Error ? event.reason.message : String(event.reason || 'An operation failed unexpectedly.');
+      const kind = classifyOperationalFailure(message);
+      notify({ title: `${kind} failed`, message, tone: 'error' });
+    };
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.alert = nativeAlert;
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [notify]);
+
+  useEffect(() => {
     if (!hasPendingChanges) return undefined;
     const handlePopState = () => {
       if (!window.confirm('You have unsaved changes. Leave this page and discard them?')) {
