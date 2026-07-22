@@ -48,6 +48,7 @@ export const classifyOperationalFailure = (message: string): ShellOperationKind 
   if (/pdf|print|render/.test(normalized)) return 'pdf';
   if (/upload|photo|image|heic|file/.test(normalized)) return 'upload';
   if (/ai|analysis|gemini|model|quota/.test(normalized)) return 'analysis';
-  if (/save|sync|cloud|firebase|network|offline|api/.test(normalized)) return 'sync';
+  if (/save|saved|saving|persist|storage/.test(normalized)) return 'save';
+  if (/sync|cloud|firebase|network|offline|api/.test(normalized)) return 'sync';
   return 'save';
 };
