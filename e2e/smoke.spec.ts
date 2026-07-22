@@ -43,7 +43,7 @@ test('editable records warn before navigation and successful persistence clears 
   await signIn(page);
   await page.getByRole('link', { name: 'Properties' }).click();
   await page.getByRole('button', { name: 'Add Property' }).click();
-  await page.getByLabel('Street Address *').fill('1 Test Street');
+  await page.getByPlaceholder('e.g. 13 Laurent Wy').fill('1 Test Street');
   await expect(page.getByText('Changes pending')).toBeVisible();
 
   page.once('dialog', async (dialog) => {
@@ -53,8 +53,8 @@ test('editable records warn before navigation and successful persistence clears 
   await page.getByRole('link', { name: 'Reports' }).click();
   await expect(page).toHaveURL(/\/app\/admin\/properties$/u);
 
-  await page.getByLabel('Suburb').fill('Perth');
-  await page.getByLabel('Postcode').fill('6000');
-  await page.getByRole('button', { name: 'Save Property' }).click();
+  await page.getByPlaceholder('e.g. Dalyellup').fill('Perth');
+  await page.getByPlaceholder('e.g. 6230').fill('6000');
+  await page.getByRole('button', { name: 'Create Property' }).click();
   await expect(page.getByText('Saved on this device')).toBeVisible();
 });
