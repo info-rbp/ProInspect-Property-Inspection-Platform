@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import AccessDenied from '../layout/AccessDenied';
+import { PermissionDeniedState } from '../layout/AsyncState';
 import { logAuditEvent } from '../../services/platform/auditService';
 import type { InternalSection } from '../../services/platform/roleAccess';
 import type { UserRole } from '../../types/platform';
@@ -17,10 +17,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ section, roles 
   const allowed = section ? canAccess(section) : roles ? hasRole(...roles) : true;
 
   useEffect(() => {
-    if (allowed || !userProfile) {
-      return;
-    }
-
+    if (allowed || !userProfile) return;
     logAuditEvent({
       agencyId: userProfile.agencyId,
       entityType: 'user',
@@ -32,10 +29,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ section, roles 
     });
   }, [allowed, currentUser?.uid, location.pathname, roles, section, userProfile]);
 
-  if (!allowed) {
-    return <AccessDenied />;
-  }
-
+  if (!allowed) return <PermissionDeniedState />;
   return <Outlet />;
 };
 

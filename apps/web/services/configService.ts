@@ -1,4 +1,5 @@
 import firebaseAppletConfig from '../../../firebase-applet-config.json';
+import { createShellOperationId, emitShellOperation } from './shellEvents';
 
 export interface RuntimeConfig {
   apiKey: string;
@@ -47,16 +48,10 @@ const sanitizeRuntimeConfig = (value: Partial<RuntimeConfig> | null | undefined)
 });
 
 export const getRuntimeConfig = (): RuntimeConfig => {
-  if (typeof window === 'undefined') {
-    return DEFAULT_RUNTIME_CONFIG;
-  }
-
+  if (typeof window === 'undefined') return DEFAULT_RUNTIME_CONFIG;
   try {
     const stored = window.localStorage.getItem(CONFIG_KEY);
-    if (!stored) {
-      return DEFAULT_RUNTIME_CONFIG;
-    }
-
+    if (!stored) return DEFAULT_RUNTIME_CONFIG;
     return sanitizeRuntimeConfig(JSON.parse(stored));
   } catch {
     return DEFAULT_RUNTIME_CONFIG;
@@ -65,32 +60,27 @@ export const getRuntimeConfig = (): RuntimeConfig => {
 
 export const saveRuntimeConfig = (config: RuntimeConfig): RuntimeConfig => {
   const sanitized = sanitizeRuntimeConfig(config);
-
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(CONFIG_KEY, JSON.stringify(sanitized));
+  const operationId = createShellOperationId('runtime-config');
+  emitShellOperation({ id: operationId, kind: 'save', status: 'started', title: 'Saving runtime configuration', persistence: 'local', source: CONFIG_KEY });
+  try {
+    if (typeof window !== 'undefined') window.localStorage.setItem(CONFIG_KEY, JSON.stringify(sanitized));
+    emitShellOperation({ id: operationId, kind: 'save', status: 'succeeded', title: 'Runtime configuration saved', persistence: 'local', source: CONFIG_KEY, clearDirty: true, announceSuccess: true });
+    return sanitized;
+  } catch (error) {
+    emitShellOperation({ id: operationId, kind: 'save', status: 'failed', title: 'Runtime configuration save failed', message: error instanceof Error ? error.message : 'The settings could not be saved.', persistence: 'local', source: CONFIG_KEY });
+    throw error;
   }
-
-  return sanitized;
 };
 
 export const clearRuntimeConfig = (): void => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(CONFIG_KEY);
-  }
+  if (typeof window !== 'undefined') window.localStorage.removeItem(CONFIG_KEY);
 };
 
 const hasCompleteFirebaseConfig = (config: FirebaseRuntimeConfig): boolean => Boolean(
-  config.apiKey &&
-  config.authDomain &&
-  config.projectId &&
-  config.storageBucket &&
-  config.messagingSenderId &&
-  config.appId
+  config.apiKey && config.authDomain && config.projectId && config.storageBucket && config.messagingSenderId && config.appId
 );
 
-export const isRuntimeFirebaseFallbackAllowed = (): boolean => {
-  return Boolean(import.meta.env.DEV);
-};
+export const isRuntimeFirebaseFallbackAllowed = (): boolean => Boolean(import.meta.env.DEV);
 
 export const getEnvFirebaseConfig = (): FirebaseRuntimeConfig => ({
   apiKey: sanitizeString(import.meta.env.VITE_FIREBASE_API_KEY),
@@ -103,7 +93,6 @@ export const getEnvFirebaseConfig = (): FirebaseRuntimeConfig => ({
 
 export const getRuntimeFirebaseConfig = (): FirebaseRuntimeConfig => {
   const config = getRuntimeConfig();
-
   return {
     apiKey: config.apiKey,
     authDomain: config.authDomain,
@@ -116,17 +105,11 @@ export const getRuntimeFirebaseConfig = (): FirebaseRuntimeConfig => {
 
 export const getResolvedFirebaseConfig = (): FirebaseRuntimeConfig | undefined => {
   const envConfig = getEnvFirebaseConfig();
-  if (hasCompleteFirebaseConfig(envConfig)) {
-    return envConfig;
-  }
+  if (hasCompleteFirebaseConfig(envConfig)) return envConfig;
 
   const runtimeConfig = getRuntimeConfig();
   const runtimeFirebaseConfig = getRuntimeFirebaseConfig();
-
-  // TODO: Remove this fallback after deployment environments are the only Firebase config source.
-  if (isRuntimeFirebaseFallbackAllowed() && runtimeConfig.enableCloudSync && hasCompleteFirebaseConfig(runtimeFirebaseConfig)) {
-    return runtimeFirebaseConfig;
-  }
+  if (isRuntimeFirebaseFallbackAllowed() && runtimeConfig.enableCloudSync && hasCompleteFirebaseConfig(runtimeFirebaseConfig)) return runtimeFirebaseConfig;
 
   if (firebaseAppletConfig && firebaseAppletConfig.apiKey && firebaseAppletConfig.projectId) {
     return {
@@ -138,20 +121,11 @@ export const getResolvedFirebaseConfig = (): FirebaseRuntimeConfig | undefined =
       appId: firebaseAppletConfig.appId || ''
     };
   }
-
   return undefined;
 };
 
-export const getFirebaseConfig = (): FirebaseRuntimeConfig => {
-  return getResolvedFirebaseConfig() || getRuntimeFirebaseConfig();
-};
-
+export const getFirebaseConfig = (): FirebaseRuntimeConfig => getResolvedFirebaseConfig() || getRuntimeFirebaseConfig();
 export const getGeminiApiKey = (): string => getRuntimeConfig().geminiApiKey;
-
 export const isAiConfigured = (): boolean => getGeminiApiKey().length > 0;
-
-export const isCloudSyncEnabled = (): boolean => {
-  return Boolean(getResolvedFirebaseConfig());
-};
-
+export const isCloudSyncEnabled = (): boolean => Boolean(getResolvedFirebaseConfig());
 export const isFirebaseConfigured = (): boolean => Boolean(getResolvedFirebaseConfig());
