@@ -6,6 +6,7 @@ import RoleProtectedRoute from './components/auth/RoleProtectedRoute';
 import AppShell from './components/layout/AppShell';
 import NotFound from './components/layout/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
+import { ShellProvider } from './contexts/ShellContext';
 import DashboardPage from './pages/DashboardPage';
 import LoginRoutePage from './pages/LoginRoutePage';
 import AdminHomePage from './pages/admin/AdminHomePage';
@@ -23,47 +24,49 @@ import ReportPreviewPage from './pages/reports/ReportPreviewPage';
 
 const App: React.FC = () => (
   <AuthProvider>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AuthRedirect />} />
-        <Route path="/auth/login" element={<LoginRoutePage />} />
+    <ShellProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AuthRedirect />} />
+          <Route path="/auth/login" element={<LoginRoutePage />} />
 
-        <Route path="/app" element={<ProtectedRoute />}>
-          <Route element={<AppShell />}>
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route element={<RoleProtectedRoute section="dashboard" />}>
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="admin" element={<AdminHomePage />} />
-            </Route>
-            <Route element={<RoleProtectedRoute section="properties" />}>
-              <Route path="admin/properties" element={<PropertiesPage />} />
-              <Route path="admin/properties/:propertyId" element={<PropertyDetailPage />} />
-            </Route>
-            <Route element={<RoleProtectedRoute section="jobs" />}>
-              <Route path="admin/jobs" element={<InspectionJobsPage />} />
-              <Route path="admin/jobs/:jobId" element={<InspectionJobDetailPage />} />
-            </Route>
-            <Route element={<RoleProtectedRoute section="reports" />}>
-              <Route path="admin/reports" element={<ReportsPage />} />
-              <Route path="admin/reports/:reportId" element={<ReportDetailPage />} />
-              <Route path="admin/reports/:reportId/edit" element={<ReportEditPage />} />
-              <Route path="admin/reports/:reportId/preview" element={<ReportPreviewPage />} />
-            </Route>
-            <Route element={<RoleProtectedRoute section="users" />}>
-              <Route path="admin/users" element={<UsersPage />} />
-            </Route>
-            <Route element={<RoleProtectedRoute section="templates" />}>
-              <Route path="admin/templates" element={<TemplatesPage />} />
-            </Route>
-            <Route element={<RoleProtectedRoute section="settings" />}>
-              <Route path="admin/settings" element={<SettingsPage />} />
+          <Route path="/app" element={<ProtectedRoute />}>
+            <Route element={<AppShell />}>
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
+              <Route element={<RoleProtectedRoute section="dashboard" />}>
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="admin" element={<AdminHomePage />} />
+              </Route>
+              <Route element={<RoleProtectedRoute section="properties" />}>
+                <Route path="admin/properties" element={<PropertiesPage />} />
+                <Route path="admin/properties/:propertyId" element={<PropertyDetailPage />} />
+              </Route>
+              <Route element={<RoleProtectedRoute section="jobs" />}>
+                <Route path="admin/jobs" element={<InspectionJobsPage />} />
+                <Route path="admin/jobs/:jobId" element={<InspectionJobDetailPage />} />
+              </Route>
+              <Route element={<RoleProtectedRoute section="reports" />}>
+                <Route path="admin/reports" element={<ReportsPage />} />
+                <Route path="admin/reports/:reportId" element={<ReportDetailPage />} />
+                <Route path="admin/reports/:reportId/edit" element={<ReportEditPage />} />
+                <Route path="admin/reports/:reportId/preview" element={<ReportPreviewPage />} />
+              </Route>
+              <Route element={<RoleProtectedRoute section="users" />}>
+                <Route path="admin/users" element={<UsersPage />} />
+              </Route>
+              <Route element={<RoleProtectedRoute section="templates" />}>
+                <Route path="admin/templates" element={<TemplatesPage />} />
+              </Route>
+              <Route element={<RoleProtectedRoute section="settings" />}>
+                <Route path="admin/settings" element={<SettingsPage />} />
+              </Route>
             </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </ShellProvider>
   </AuthProvider>
 );
 
