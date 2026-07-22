@@ -27,11 +27,22 @@ function dependencies(overrides: Partial<ApiDependencies> = {}): ApiDependencies
     reports: {
       load: async () => undefined,
       saveDraft: async () => { throw new Error('not used'); },
+      updateMetadata: async () => { throw new Error('not used'); },
+      createArea: async () => { throw new Error('not used'); },
+      updateArea: async () => { throw new Error('not used'); },
+      deleteArea: async () => { throw new Error('not used'); },
+      createComponent: async () => { throw new Error('not used'); },
+      updateComponent: async () => { throw new Error('not used'); },
+      reorderAreas: async () => { throw new Error('not used'); },
+      reorderComponents: async () => { throw new Error('not used'); },
+      runQuality: async () => { throw new Error('not used'); },
+      latestQuality: async () => undefined,
+      waiveQuality: async () => { throw new Error('not used'); },
       transition: async () => { throw new Error('not used'); },
     },
     idempotency: new MemoryIdempotencyStore(),
     tasks: { dispatch: async () => undefined },
-    uploads: { create: async () => ({}) },
+    uploads: { create: async () => ({}), complete: async () => ({}) },
     ...overrides,
   };
 }

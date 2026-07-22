@@ -8,7 +8,6 @@ export interface RuntimeConfig {
   storageBucket: string;
   messagingSenderId: string;
   appId: string;
-  geminiApiKey: string;
   enableCloudSync: boolean;
 }
 
@@ -30,7 +29,6 @@ const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   storageBucket: '',
   messagingSenderId: '',
   appId: '',
-  geminiApiKey: '',
   enableCloudSync: false,
 };
 
@@ -43,7 +41,6 @@ const sanitizeRuntimeConfig = (value: Partial<RuntimeConfig> | null | undefined)
   storageBucket: sanitizeString(value?.storageBucket),
   messagingSenderId: sanitizeString(value?.messagingSenderId),
   appId: sanitizeString(value?.appId),
-  geminiApiKey: sanitizeString(value?.geminiApiKey),
   enableCloudSync: Boolean(value?.enableCloudSync),
 });
 
@@ -122,7 +119,5 @@ export const getResolvedFirebaseConfig = (): FirebaseRuntimeConfig | undefined =
 };
 
 export const getFirebaseConfig = (): FirebaseRuntimeConfig => getResolvedFirebaseConfig() || getRuntimeFirebaseConfig();
-export const getGeminiApiKey = (): string => getRuntimeConfig().geminiApiKey;
-export const isAiConfigured = (): boolean => getGeminiApiKey().length > 0;
 export const isCloudSyncEnabled = (): boolean => Boolean(getResolvedFirebaseConfig());
 export const isFirebaseConfigured = (): boolean => Boolean(getResolvedFirebaseConfig());

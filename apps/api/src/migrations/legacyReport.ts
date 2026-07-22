@@ -50,14 +50,16 @@ export function planLegacyReportMigration(sourceReportId: string, value: Record<
       components: array<LegacyItem>(room.items).map((item, componentIndex) => {
         const isClean = boolean(item.isClean, false);
         const isUndamaged = boolean(item.isUndamaged, false);
-        const isWorking = boolean(item.isWorking, false);
+        if (typeof item.isWorking === 'boolean') warnings.push(`Did not convert legacy isWorking for ${areaId}/${safeId(item.id, `${areaId}-component-${componentIndex + 1}`)}; explicit testing confirmation is required.`);
         return {
           id: safeId(item.id, `${areaId}-component-${componentIndex + 1}`),
           component: text(item.name, `Component ${componentIndex + 1}`),
+          visibility: photoReferences.length ? 'visible' as const : 'not_visible' as const,
+          testingMethod: 'not_tested' as const,
           conditionCategory: isUndamaged ? 'intact' as const : 'repair_required' as const,
           cleanlinessCategory: isClean ? 'clean' as const : 'requires_cleaning' as const,
-          workingStatus: isWorking ? 'operation_confirmed' as const : 'untested' as const,
-          testStatus: isWorking ? 'tested_passed' as const : 'untested' as const,
+          workingStatus: 'untested' as const,
+          testStatus: 'untested' as const,
           defects: isUndamaged ? [] : [text(item.comment, 'Legacy condition issue recorded.')],
           maintenanceRequired: !isUndamaged,
           commentary: text(item.comment, `${text(item.name, 'Component')} migrated from the legacy report.`),

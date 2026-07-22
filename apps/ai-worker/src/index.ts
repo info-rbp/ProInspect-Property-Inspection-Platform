@@ -9,6 +9,8 @@ export type AnalysisTaskStatus = 'queued' | 'running' | 'succeeded' | 'retryable
 export interface AnalysisEvidence {
   photoId: string;
   objectGeneration: string;
+  objectPath?: string;
+  contentType?: string;
   areaId?: string;
   componentIds: string[];
 }
@@ -18,16 +20,23 @@ export interface AnalysisTask {
   agencyId: string;
   reportId: string;
   reportVersionId: string;
+  workspaceRevision?: number;
   templateId: string;
   templateVersion: number;
   promptVersion: string;
   model: string;
+  safetyConfiguration?: Record<string, string>;
   evidence: AnalysisEvidence[];
   attempt: number;
   maxAttempts: number;
   status: AnalysisTaskStatus;
   createdAt: string;
   updatedAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  failureCode?: string;
+  failureMessage?: string;
+  usage?: { inputTokens?: number; outputTokens?: number; estimatedCostMicros?: number };
 }
 
 export interface AnalysisClaim {
@@ -59,6 +68,7 @@ export interface AnalysisTaskStore {
   save(task: AnalysisTask): Promise<void>;
   getResult(taskId: string): Promise<AnalysisResult | undefined>;
   saveResult(result: AnalysisResult): Promise<void>;
+  claim?(taskId: string, now: string): Promise<AnalysisTask | undefined>;
 }
 
 export class InMemoryAnalysisTaskStore implements AnalysisTaskStore {
@@ -78,6 +88,13 @@ export class InMemoryAnalysisTaskStore implements AnalysisTaskStore {
   }
   async saveResult(result: AnalysisResult): Promise<void> {
     this.results.set(result.taskId, structuredClone(result));
+  }
+  async claim(taskId: string, now: string): Promise<AnalysisTask | undefined> {
+    const task = this.tasks.get(taskId);
+    if (!task || !['queued', 'retryable_failure'].includes(task.status)) return undefined;
+    const claimed = { ...task, status: 'running' as const, attempt: task.attempt + 1, startedAt: now, updatedAt: now };
+    this.tasks.set(taskId, claimed);
+    return structuredClone(claimed);
   }
 }
 
@@ -116,8 +133,14 @@ export class DurableAnalysisProcessor {
     if (existing) return { status: 'succeeded', result: existing };
     if (task.status === 'dead_lettered') return { status: 'dead_lettered' };
 
-    const running: AnalysisTask = { ...task, status: 'running', attempt: task.attempt + 1, updatedAt: now };
-    await this.store.save(running);
+    const running = this.store.claim
+      ? await this.store.claim(taskId, now)
+      : { ...task, status: 'running' as const, attempt: task.attempt + 1, startedAt: now, updatedAt: now };
+    if (!running) {
+      const completed = await this.store.getResult(taskId);
+      return completed ? { status: 'succeeded', result: completed } : { status: task.status };
+    }
+    if (!this.store.claim) await this.store.save(running);
     try {
       const modelResult = await this.gateway.analyse(running);
       validateAnalysisClaims(running, modelResult.claims);
@@ -132,15 +155,25 @@ export class DurableAnalysisProcessor {
         completedAt: now,
       };
       await this.store.saveResult(result);
-      await this.store.save({ ...running, status: 'succeeded', updatedAt: now });
+      await this.store.save({ ...running, status: 'succeeded', usage: result.usage, completedAt: now, updatedAt: now });
       return { status: 'succeeded', result };
     } catch (error) {
       const exhausted = running.attempt >= running.maxAttempts;
-      await this.store.save({ ...running, status: exhausted ? 'dead_lettered' : 'retryable_failure', updatedAt: now });
+      const failureMessage = error instanceof Error ? error.message : String(error);
+      await this.store.save({ ...running, status: exhausted ? 'dead_lettered' : 'retryable_failure', failureCode: exhausted ? 'ATTEMPTS_EXHAUSTED' : 'MODEL_RETRYABLE', failureMessage, updatedAt: now });
       if (exhausted) return { status: 'dead_lettered' };
       throw error;
     }
   }
+}
+
+export { FirestoreAnalysisTaskStore } from './repositories/firestoreAnalysisTaskStore.js';
+export { VertexModelGateway } from './gateways/vertexModelGateway.js';
+
+export async function processAnalysisTask(agencyId: string, taskId: string): Promise<{ status: AnalysisTaskStatus; result?: AnalysisResult }> {
+  const { FirestoreAnalysisTaskStore } = await import('./repositories/firestoreAnalysisTaskStore.js');
+  const { VertexModelGateway } = await import('./gateways/vertexModelGateway.js');
+  return new DurableAnalysisProcessor(new FirestoreAnalysisTaskStore(agencyId), new VertexModelGateway()).process(taskId);
 }
 
 export async function handleAnalysisTask(taskId: string, input: unknown = { reportId: taskId }): Promise<{ taskId: string; status: 'accepted' }> {

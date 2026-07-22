@@ -1,53 +1,26 @@
-import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
-import {
-  getAuth,
-  onAuthStateChanged as onFirebaseAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  type User,
-} from 'firebase/auth';
 import { openDB } from 'idb';
 import type { Photo, ReportData, Room } from '../types';
 import { apiRequest } from './apiClient';
 import { runShellOperation } from './runShellOperation';
-import { getResolvedFirebaseConfig, isFirebaseConfigured as isFirebaseConfigResolved } from './configService';
+import { auth, firebaseApp, isFirebaseConfigured } from './firebaseClient';
 
 export let db: ReturnType<typeof getFirestore> | undefined;
 export let storage: ReturnType<typeof getStorage> | undefined;
-export let auth: ReturnType<typeof getAuth> | undefined;
 
 try {
-  const firebaseConfig = getResolvedFirebaseConfig();
-  if (firebaseConfig) {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    auth = getAuth(app);
+  if (firebaseApp) {
+    db = getFirestore(firebaseApp);
+    storage = getStorage(firebaseApp);
   }
 } catch (error) {
   console.error('Firebase initialization failed', error);
 }
 
-export const isFirebaseConfigured = (): boolean => {
-  if (typeof window !== 'undefined' && window.localStorage.getItem('pcr_proinspect_logged_in') === 'true') {
-    return false;
-  }
-  return isFirebaseConfigResolved();
-};
 export const getFirestoreDb = () => db;
 export const getFirebaseAuth = () => auth;
-export const onAuthStateChanged = onFirebaseAuthStateChanged;
-
-export const signInWithEmailPassword = async (email: string, password: string): Promise<User> => {
-  if (!auth) throw new Error('Identity Platform is not configured for this deployment.');
-  return (await signInWithEmailAndPassword(auth, email, password)).user;
-};
-
-export const signOutUser = async (): Promise<void> => {
-  if (auth) await signOut(auth);
-};
+export { auth, isFirebaseConfigured };
 
 const LOCAL_DB_NAME = 'rbp-reports-db';
 const LOCAL_STORE_NAME = 'reports';
@@ -56,6 +29,8 @@ const resolvedPhotoUrls = new Map<string, Promise<string>>();
 interface AggregateComponent {
   id: string;
   component: string;
+  visibility: string;
+  testingMethod?: string;
   conditionCategory: string;
   cleanlinessCategory: string;
   workingStatus: string;
@@ -140,12 +115,14 @@ function toAggregate(report: ReportData): ReportAggregatePayload {
         components: room.items.map((item) => ({
           id: item.id,
           component: item.name,
+          visibility: references.length ? 'visible' : 'not_visible',
+          testingMethod: 'not_tested',
           conditionCategory: item.isUndamaged ? 'intact' : 'repair_required',
           cleanlinessCategory: item.isClean ? 'clean' : 'requires_cleaning',
-          workingStatus: item.isWorking ? 'operation_confirmed' : 'not_working',
-          testStatus: item.isWorking ? 'tested_passed' : 'tested_failed',
+          workingStatus: 'untested',
+          testStatus: 'untested',
           defects: item.isUndamaged ? [] : [item.comment || 'Condition issue recorded.'],
-          maintenanceRequired: !item.isUndamaged || !item.isWorking,
+          maintenanceRequired: !item.isUndamaged,
           commentary: item.comment || `${item.name} assessed during inspection.`,
           photoReferences: references,
           reviewStatus: room.status === 'complete' ? 'reviewer_approved' : room.status === 'analyzed' ? 'ai_generated' : 'draft',

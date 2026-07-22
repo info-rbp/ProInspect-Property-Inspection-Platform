@@ -1,6 +1,27 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { DomainErrorShape, SecurityCapability } from '@pcr/domain';
+import {
+  transitionComparison,
+  transitionDelivery,
+  transitionEvidencePack,
+  transitionFieldAttendance,
+  transitionImport,
+  transitionMaintenance,
+  transitionPortfolioAudit,
+  transitionServiceOrder,
+  type ComparisonRunRecord,
+  type DeliveryPackageRecord,
+  type DomainErrorShape,
+  type EvidencePackRecord,
+  type FieldAttendanceRecord,
+  type ImportJobRecord,
+  type MaintenanceItemRecord,
+  type PortfolioAuditRunRecord,
+  type SecurityCapability,
+  type ServiceOrderRecord,
+} from '@pcr/domain';
+import { materialisePublishedTemplate } from '@pcr/templates';
+import { WA_RESIDENTIAL_V1_TEMPLATES } from '@pcr/templates/presets/wa';
 import {
   resourceWriteSchema,
   taskCreationSchema,
@@ -134,6 +155,57 @@ function routeParts(urlValue: string | undefined): string[] {
   return url.pathname.split('/').filter(Boolean);
 }
 
+function requiredText(body: Record<string, unknown>, field: string): string {
+  const value = body[field];
+  if (typeof value !== 'string' || !value.trim()) throw new ApiError(400, 'VALIDATION_ERROR', `${field} is required.`);
+  return value.trim();
+}
+
+function optionalStringArray(value: unknown, field: string): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !item.trim())) throw new ApiError(400, 'VALIDATION_ERROR', `${field} must contain identifiers.`);
+  return value as string[];
+}
+
+function deterministicCommandId(agencyId: string, key: string, kind: string): string {
+  return createHash('sha256').update(`${agencyId}|${key}|${kind}`).digest('hex').slice(0, 32);
+}
+
+const controlledResources = new Set(['import-jobs', 'deliveries', 'maintenance-items', 'comparison-runs', 'service-orders', 'field-attendances', 'evidence-packs', 'portfolio-audits']);
+const initialStatus: Record<string, string> = {
+  'import-jobs': 'queued', deliveries: 'draft', 'maintenance-items': 'candidate', 'comparison-runs': 'queued',
+  'service-orders': 'requested', 'field-attendances': 'scheduled', 'evidence-packs': 'requested', 'portfolio-audits': 'queued',
+};
+
+function commandStatus(resource: string, action: string): string {
+  const commands: Record<string, Record<string, string>> = {
+    'import-jobs': { extract: 'extracting', map: 'mapping', review: 'review_required', confirm: 'confirmed', retry: 'queued', fail: 'failed' },
+    deliveries: { queue: 'queued', 'mark-sent': 'sent', 'mark-opened': 'opened', 'mark-downloaded': 'downloaded', revoke: 'revoked', expire: 'expired', retry: 'queued', fail: 'failed' },
+    'maintenance-items': { approve: 'approved', 'await-owner': 'awaiting_owner', assign: 'assigned', start: 'in_progress', complete: 'completed', verify: 'verified', close: 'closed', defer: 'deferred', cancel: 'cancelled' },
+    'comparison-runs': { start: 'matching', 'complete-matching': 'suggestions_ready', review: 'review_in_progress', approve: 'approved', retry: 'queued', fail: 'failed' },
+    'service-orders': { triage: 'triaged', assign: 'assigned', start: 'in_progress', 'submit-quality': 'quality_review', complete: 'completed', rework: 'in_progress', retry: 'assigned', fail: 'failed', cancel: 'cancelled' },
+    'field-attendances': { travel: 'travelling', arrive: 'arrived', complete: 'completed', 'no-access': 'no_access', unsafe: 'unsafe', cancel: 'cancelled' },
+    'evidence-packs': { approve: 'approved', generate: 'assembling', ready: 'ready', revoke: 'revoked', expire: 'expired', retry: 'approved', fail: 'failed' },
+    'portfolio-audits': { start: 'processing', review: 'review_required', approve: 'approved', issue: 'issued', retry: 'queued', fail: 'failed' },
+  };
+  const status = commands[resource]?.[action];
+  if (!status) throw new ApiError(404, 'COMMAND_NOT_FOUND', `Command ${action} is not available for ${resource}.`);
+  return status;
+}
+
+function serviceTransition(resource: string, existing: Record<string, unknown>, action: string, body: Record<string, unknown>, actorId: string): Record<string, unknown> {
+  const status = commandStatus(resource, action);
+  if (resource === 'maintenance-items') return transitionMaintenance(existing as unknown as MaintenanceItemRecord, status as MaintenanceItemRecord['status'], optionalStringArray(body.evidenceIds, 'evidenceIds')) as unknown as Record<string, unknown>;
+  if (resource === 'import-jobs') return transitionImport(existing as unknown as ImportJobRecord, status as ImportJobRecord['status'], Number(body.acceptedCandidateCount ?? 0)) as unknown as Record<string, unknown>;
+  if (resource === 'deliveries') return transitionDelivery(existing as unknown as DeliveryPackageRecord, status as DeliveryPackageRecord['status']) as unknown as Record<string, unknown>;
+  if (resource === 'comparison-runs') return transitionComparison(existing as unknown as ComparisonRunRecord, status as ComparisonRunRecord['status'], Number(body.pendingReviewCount ?? 0)) as unknown as Record<string, unknown>;
+  if (resource === 'service-orders') return transitionServiceOrder(existing as unknown as ServiceOrderRecord, status as ServiceOrderRecord['status'], actorId) as unknown as Record<string, unknown>;
+  if (resource === 'field-attendances') return transitionFieldAttendance(existing as unknown as FieldAttendanceRecord, status as FieldAttendanceRecord['status'], typeof body.outcomeCode === 'string' ? body.outcomeCode : undefined) as unknown as Record<string, unknown>;
+  if (resource === 'evidence-packs') return transitionEvidencePack(existing as unknown as EvidencePackRecord, status as EvidencePackRecord['status']) as unknown as Record<string, unknown>;
+  if (resource === 'portfolio-audits') return transitionPortfolioAudit(existing as unknown as PortfolioAuditRunRecord, status as PortfolioAuditRunRecord['status'], actorId) as unknown as Record<string, unknown>;
+  throw new ApiError(404, 'COMMAND_NOT_FOUND', 'Unsupported service command.');
+}
+
 export async function routeApiRequest(
   req: IncomingMessage,
   _res: ServerResponse,
@@ -151,8 +223,119 @@ export async function routeApiRequest(
   const agencyId = agencyHeader(req);
   const id = parts[3];
   const command = parts[4];
+  const action = parts[5];
   const body = req.method === 'GET' ? {} : await readJson(req);
   const targetBody = { ...body, agencyId };
+
+  if (req.method === 'POST' && resourceName === 'inspection-jobs' && id === 'commands' && command === 'book') {
+    const propertyId = requiredText(body, 'propertyId');
+    const inspectionType = requiredText(body, 'inspectionType');
+    const templateId = requiredText(body, 'templateId');
+    const templateVersion = Number(body.templateVersion);
+    const scheduledAt = requiredText(body, 'scheduledAt');
+    if (!['entry', 'routine', 'exit'].includes(inspectionType)) throw new ApiError(400, 'VALIDATION_ERROR', 'inspectionType must be entry, routine or exit.');
+    if (!Number.isInteger(templateVersion) || templateVersion < 1) throw new ApiError(400, 'VALIDATION_ERROR', 'templateVersion must be a positive integer.');
+    if (Number.isNaN(Date.parse(scheduledAt))) throw new ApiError(400, 'VALIDATION_ERROR', 'scheduledAt must be an ISO date-time.');
+    const property = await dependencies.repository.get('properties', agencyId, propertyId);
+    if (!property) throw new ApiError(404, 'PROPERTY_NOT_FOUND', 'Property not found in this agency.');
+    const tenancyId = typeof body.tenancyId === 'string' && body.tenancyId.trim() ? body.tenancyId.trim() : undefined;
+    if (tenancyId) {
+      const tenancy = await dependencies.repository.get('tenancies', agencyId, tenancyId);
+      if (!tenancy || tenancy.propertyId !== propertyId) throw new ApiError(409, 'TENANCY_PROPERTY_MISMATCH', 'Tenancy does not belong to the selected property.');
+    }
+    const template = WA_RESIDENTIAL_V1_TEMPLATES.find((candidate) => candidate.id === templateId && candidate.version === templateVersion);
+    if (!template || template.status !== 'published' || template.inspectionType !== inspectionType) throw new ApiError(409, 'PUBLISHED_TEMPLATE_REQUIRED', 'A compatible published template version is required.');
+    const sourceReportIds = optionalStringArray(body.sourceReportIds, 'sourceReportIds');
+    const baselineVersionIds = optionalStringArray(body.baselineVersionIds, 'baselineVersionIds');
+    if (inspectionType === 'exit' && (!sourceReportIds.length || !baselineVersionIds.length)) throw new ApiError(409, 'ENTRY_BASELINE_REQUIRED', 'Exit booking requires an Entry source report and immutable baseline version.');
+    const inspectorId = typeof body.assignedInspectorId === 'string' && body.assignedInspectorId.trim() ? body.assignedInspectorId.trim() : undefined;
+    const reviewerId = typeof body.assignedReviewerId === 'string' && body.assignedReviewerId.trim() ? body.assignedReviewerId.trim() : undefined;
+    for (const [userId, expectedRole] of [[inspectorId, 'inspector'], [reviewerId, 'reviewer']] as const) {
+      if (!userId) continue;
+      const user = await dependencies.repository.get('users', agencyId, userId);
+      if (!user || user.role !== expectedRole || user.status !== 'active') throw new ApiError(409, 'ASSIGNEE_ROLE_INVALID', `Assigned ${expectedRole} is not an active ${expectedRole}.`);
+    }
+    const key = idempotencyKey(req);
+    const expectedJobId = deterministicCommandId(agencyId, key, 'job');
+    const active = await dependencies.repository.list('inspectionJobs', agencyId, 100);
+    const conflict = active.items.find((job) => job.id !== expectedJobId && job.propertyId === propertyId && !['finalised', 'archived', 'cancelled'].includes(String(job.status)) && job.scheduledAt === scheduledAt);
+    if (conflict) throw new ApiError(409, 'ACTIVE_JOB_CONFLICT', 'A conflicting active inspection job already exists.', { conflictingJobId: conflict.id });
+    const principal = await authenticateAndAuthorise(req, dependencies, 'job.manage', { agencyId, propertyId, ...(tenancyId ? { tenancyId } : {}) }, correlationId);
+    return idempotent(dependencies, req, agencyId, 'inspection-jobs:book', body, async () => {
+      const jobId = deterministicCommandId(agencyId, key, 'job');
+      const reportId = deterministicCommandId(agencyId, key, 'report');
+      const assignmentId = deterministicCommandId(agencyId, key, 'assignment');
+      const timestamp = new Date().toISOString();
+      let report = await dependencies.reports.load(agencyId, reportId);
+      if (!report) {
+        report = await dependencies.reports.saveDraft(materialisePublishedTemplate(template, {
+          agencyId, reportId, inspectionJobId: jobId, propertyId, propertyAddress: String(property.address),
+          ...(tenancyId ? { tenancyId } : {}), ...(inspectorId ? { assignedInspectorId: inspectorId } : {}),
+          ...(reviewerId ? { assignedReviewerId: reviewerId } : {}), assignedAt: timestamp, assignedBy: principal.uid,
+          ...(sourceReportIds.length ? { sourceReportIds } : {}), ...(baselineVersionIds.length ? { baselineVersionIds } : {}),
+        }), undefined, principal.uid);
+      }
+      let job = await dependencies.repository.get('inspectionJobs', agencyId, jobId);
+      if (!job) job = await dependencies.repository.create('inspectionJobs', agencyId, jobId, {
+        propertyId, ...(tenancyId ? { tenancyId } : {}), reportId, reportType: report.report.reportType,
+        inspectionType, scheduledAt, ...(inspectorId ? { assignedInspectorId: inspectorId } : {}),
+        ...(reviewerId ? { assignedReviewerId: reviewerId } : {}), status: inspectorId ? 'assigned' : 'booked',
+        bookingSagaStatus: 'materialised', templateId, templateVersion,
+      }, principal.uid);
+      if (!await dependencies.repository.get('reportTemplateAssignments', agencyId, assignmentId)) {
+        await dependencies.repository.create('reportTemplateAssignments', agencyId, assignmentId, {
+          reportId, jobId, templateId, templateVersion, templateHash: template.contentHash,
+          assignedAt: timestamp, assignedBy: principal.uid, immutable: true,
+        }, principal.uid);
+      }
+      if (!await dependencies.repository.get('assignmentHistory', agencyId, assignmentId)) {
+        await dependencies.repository.create('assignmentHistory', agencyId, assignmentId, {
+          inspectionJobId: jobId, reportId, assignedInspectorId: inspectorId ?? null,
+          assignedReviewerId: reviewerId ?? null, effectiveAt: timestamp, reason: 'initial_booking',
+        }, principal.uid);
+      }
+      const eventId = deterministicCommandId(agencyId, key, 'event');
+      if (!await dependencies.repository.get('outboxEvents', agencyId, eventId)) {
+        await dependencies.repository.create('outboxEvents', agencyId, eventId, {
+          eventType: 'inspection_job.booked', aggregateType: 'inspection_job', aggregateId: jobId,
+          aggregateVersion: job.version, payload: { jobId, reportId, propertyId, templateId, templateVersion },
+          correlationId, status: 'pending', attempt: 0, availableAt: timestamp,
+        }, principal.uid);
+      }
+      await appendMaterialAudit(dependencies, principal, 'job.manage', 'inspection_jobs.book', correlationId, { ...job, reportId });
+      return { status: 201, body: { data: { jobId, reportId, assignmentId, jobVersion: job.version, reportVersion: report.report.version, workspaceRevision: report.report.workspaceRevision }, meta: { correlationId } } };
+    });
+  }
+
+  if (req.method === 'POST' && id && command === 'commands' && action && controlledResources.has(resourceName)) {
+    const existing = await dependencies.repository.get(policy.collection, agencyId, id);
+    if (!existing) throw new ApiError(404, 'NOT_FOUND', 'Record not found.');
+    const writeCapability = policy.writeCapability;
+    if (!writeCapability) throw new ApiError(405, 'METHOD_NOT_ALLOWED', 'This resource is read-only.');
+    const principal = await authenticateAndAuthorise(req, dependencies, writeCapability, policy.target({ ...existing, agencyId }, id), correlationId);
+    const version = expectedVersion(body);
+    if (existing.version !== version) throw new ApiError(409, 'VERSION_CONFLICT', 'The record has changed. Reload and retry.', { expectedVersion: version, actualVersion: existing.version });
+    const key = idempotencyKey(req);
+    return idempotent(dependencies, req, agencyId, `${resourceName}:${id}:commands:${action}`, body, async () => {
+      const transitioned = serviceTransition(resourceName, existing, action, body, principal.uid);
+      const systemFields = new Set(['id', 'agencyId', 'version', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy']);
+      const patch = Object.fromEntries(Object.entries(transitioned).filter(([field]) => !systemFields.has(field)));
+      const updated = await dependencies.repository.update(policy.collection, agencyId, id, patch, version, principal.uid);
+      const eventId = deterministicCommandId(agencyId, key, `${resourceName}:${id}:${action}:event`);
+      if (!await dependencies.repository.get('outboxEvents', agencyId, eventId)) {
+        await dependencies.repository.create('outboxEvents', agencyId, eventId, {
+          eventType: `${resourceName.replace(/-/gu, '_')}.${action.replace(/-/gu, '_')}`, aggregateType: resourceName,
+          aggregateId: id, aggregateVersion: updated.version, payload: { id, status: updated.status }, correlationId,
+          status: 'pending', attempt: 0, availableAt: new Date().toISOString(),
+        }, principal.uid);
+      }
+      if (resourceName === 'evidence-packs' && action === 'generate') await dependencies.tasks.dispatch('evidence_pack', agencyId, id, updated);
+      if (resourceName === 'portfolio-audits' && action === 'start') await dependencies.tasks.dispatch('portfolio_audit', agencyId, id, updated);
+      if (resourceName === 'import-jobs' && ['extract', 'retry'].includes(action)) await dependencies.tasks.dispatch('import', agencyId, id, updated);
+      await appendMaterialAudit(dependencies, principal, writeCapability, `${resourceName}.${action}`, correlationId, updated);
+      return { status: action === 'generate' || action === 'start' || action === 'extract' ? 202 : 200, body: { data: updated, meta: { correlationId } } };
+    });
+  }
 
   if (req.method === 'GET') {
     if (id) {
@@ -172,6 +355,7 @@ export async function routeApiRequest(
   if (!writeCapability) throw new ApiError(405, 'METHOD_NOT_ALLOWED', 'This resource is read-only.');
 
   if (req.method === 'POST' && command === 'transitions' && id) {
+    if (controlledResources.has(resourceName)) throw new ApiError(410, 'GENERIC_TRANSITION_DISABLED', 'Use a named command for this workflow.');
     const transition = validation(workflowTransitionSchema.parse(body));
     const existing = await dependencies.repository.get(policy.collection, agencyId, id);
     if (!existing) throw new ApiError(404, 'NOT_FOUND', 'Record not found.');
@@ -192,6 +376,16 @@ export async function routeApiRequest(
   }
 
   if (req.method === 'POST' && resourceName === 'uploads') {
+    if (id && command === 'complete') {
+      const existing = await dependencies.repository.get(policy.collection, agencyId, id);
+      if (!existing) throw new ApiError(404, 'UPLOAD_SESSION_NOT_FOUND', 'Upload session not found.');
+      const principal = await authenticateAndAuthorise(req, dependencies, writeCapability, policy.target({ ...existing, agencyId }, id), correlationId);
+      return idempotent(dependencies, req, agencyId, `uploads:${id}:complete`, body, async () => {
+        const evidence = await dependencies.uploads.complete(agencyId, id, body, principal);
+        await appendMaterialAudit(dependencies, principal, writeCapability, 'uploads.complete', correlationId, evidence);
+        return { status: 200, body: { data: evidence, meta: { correlationId } } };
+      });
+    }
     const input = validation(uploadSessionSchema.parse(body));
     const principal = await authenticateAndAuthorise(req, dependencies, writeCapability, policy.target({ ...input, agencyId }), correlationId);
     return idempotent(dependencies, req, agencyId, 'uploads.create', body, async () => {
@@ -232,7 +426,12 @@ export async function routeApiRequest(
     const principal = await authenticateAndAuthorise(req, dependencies, writeCapability, policy.target(targetBody), correlationId);
     return idempotent(dependencies, req, agencyId, `${resourceName}.create`, body, async () => {
       const recordId = typeof body.id === 'string' && body.id.trim() ? body.id.trim() : randomUUID();
-      const stored = await dependencies.repository.create(policy.collection, agencyId, recordId, writeBody(body), principal.uid);
+      const data = writeBody(body);
+      if (controlledResources.has(resourceName)) {
+        if (typeof data.status === 'string' && data.status !== initialStatus[resourceName]) throw new ApiError(409, 'INITIAL_STATUS_INVALID', `New ${resourceName} records must start in ${initialStatus[resourceName]}.`);
+        data.status = initialStatus[resourceName];
+      }
+      const stored = await dependencies.repository.create(policy.collection, agencyId, recordId, data, principal.uid);
       await appendMaterialAudit(dependencies, principal, writeCapability, `${resourceName}.create`, correlationId, stored);
       return { status: 201, body: { data: stored, meta: { correlationId } } };
     });
@@ -242,6 +441,7 @@ export async function routeApiRequest(
     const existing = await dependencies.repository.get(policy.collection, agencyId, id);
     if (!existing) throw new ApiError(404, 'NOT_FOUND', 'Record not found.');
     const principal = await authenticateAndAuthorise(req, dependencies, writeCapability, policy.target({ ...existing, ...targetBody }, id), correlationId);
+    if (controlledResources.has(resourceName) && 'status' in body) throw new ApiError(409, 'COMMAND_REQUIRED', 'Lifecycle status can only be changed through a named command.');
     return idempotent(dependencies, req, agencyId, `${resourceName}:${id}.update`, body, async () => {
       const stored = await dependencies.repository.update(policy.collection, agencyId, id, writeBody(body), expectedVersion(body), principal.uid);
       await appendMaterialAudit(dependencies, principal, writeCapability, `${resourceName}.update`, correlationId, stored);

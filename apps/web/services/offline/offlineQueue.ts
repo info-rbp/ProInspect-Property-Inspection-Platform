@@ -13,6 +13,13 @@ export interface QueuedMutation {
   body: unknown;
   idempotencyKey: string;
   baseVersion?: number;
+  workspaceRevision?: number;
+  fieldPatchPaths?: string[];
+  dependencyIds?: string[];
+  localSnapshotId?: string;
+  dataClassification?: 'standard' | 'personal' | 'sensitive';
+  encryptionVersion?: number;
+  conflictPolicy?: 'field_merge' | 'manual' | 'server_reject';
   createdAt: string;
   expiresAt: string;
   attempts: number;

@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
     function activeAgency(agency) { return signedIn() && request.auth.token.agencyId == agency; }
-    function internalRole() { return request.auth.token.role in ['proinspect_admin', 'operations', 'inspector', 'analyst', 'reviewer']; }
+    function internalRole() { return request.auth.token.role in ['super_admin', 'proinspect_admin', 'operations', 'inspector', 'analyst', 'reviewer', 'property_manager', 'maintenance_coordinator']; }
 
     // Original evidence is uploaded only through API-issued resumable sessions.
     // Browser SDK writes are denied so an existing generation cannot be silently replaced.
@@ -18,6 +18,20 @@ service firebase.storage {
     }
 
     match /temporary-uploads/agencies/{agency}/{path=**} {
+      allow read, write: if false;
+    }
+
+    match /source-documents/agencies/{agency}/{path=**} {
+      allow read: if activeAgency(agency) && request.auth.token.role in ['super_admin', 'proinspect_admin', 'operations', 'analyst', 'reviewer', 'property_manager'];
+      allow write: if false;
+    }
+
+    match /tenant-evidence/agencies/{agency}/{path=**} {
+      allow read: if activeAgency(agency) && (internalRole() || request.auth.token.role == 'tenant');
+      allow write: if false;
+    }
+
+    match /evidence-packs/agencies/{agency}/{path=**} {
       allow read, write: if false;
     }
 

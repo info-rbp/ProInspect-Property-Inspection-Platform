@@ -48,6 +48,9 @@ export function buildOpenApiDocument() {
       responses: { '200': { description: 'Workflow transition completed' }, '409': { $ref: '#/components/responses/Error' } },
     },
   };
+  paths['/api/v1/inspection-jobs/commands/book'] = {
+    post: { ...operation('inspection-jobs', 'post', true), operationId: 'bookInspectionJob', description: 'Materialises a published template, job, immutable assignment, report workspace, audit event and outbox event as a recoverable idempotent booking saga.' },
+  };
   paths['/api/v1/reports/{id}/aggregate'] = {
     get: {
       ...operation('reports', 'get', false),
@@ -57,7 +60,8 @@ export function buildOpenApiDocument() {
     put: {
       ...operation('reports', 'put', false),
       operationId: 'saveReportAggregate',
-      description: 'Atomically creates or replaces editable report metadata, areas and components. Binary media is rejected.',
+      description: 'Deprecated migration-only endpoint. Atomically creates or replaces editable report metadata, areas and components. Binary media is rejected.',
+      deprecated: true,
       responses: {
         '200': { description: 'Existing aggregate updated' },
         '201': { description: 'Aggregate created' },
@@ -71,16 +75,67 @@ export function buildOpenApiDocument() {
     post: {
       ...operation('reports', 'post', false),
       operationId: 'transitionReport',
-      description: 'Atomically changes report and job state, assignment, audit, notification and immutable version records.',
-      responses: { '200': { description: 'Report transition completed' }, '409': { $ref: '#/components/responses/Error' } },
+      deprecated: true,
+      description: 'Disabled. Use a named command under /commands/{command}.',
+      responses: { '410': { $ref: '#/components/responses/Error' } },
     },
   };
+  paths['/api/v1/reports/{id}/workspace'] = {
+    get: { ...operation('reports', 'get', false), operationId: 'getReportWorkspace', description: 'Loads canonical report metadata, area and component records with entity versions.' },
+  };
+  paths['/api/v1/reports/{id}/metadata'] = {
+    patch: { ...operation('reports', 'patch', false), operationId: 'patchReportMetadata', description: 'Updates editable report metadata using report-level optimistic concurrency.' },
+  };
+  paths['/api/v1/reports/{id}/areas'] = {
+    post: { ...operation('reports', 'post', false), operationId: 'createReportArea', description: 'Creates one draft report area and increments the workspace revision.' },
+  };
+  paths['/api/v1/reports/{id}/areas/{areaId}'] = {
+    patch: { ...operation('reports', 'patch', false), operationId: 'patchReportArea', description: 'Updates one area using its entity version.' },
+    delete: { ...operation('reports', 'patch', false), operationId: 'deleteReportArea', description: 'Deletes one editable area and its component records.' },
+  };
+  paths['/api/v1/reports/{id}/areas/{areaId}/components'] = {
+    post: { ...operation('reports', 'post', false), operationId: 'createReportComponent', description: 'Creates one structured component assessment.' },
+  };
+  paths['/api/v1/reports/{id}/areas/{areaId}/components/{componentId}'] = {
+    patch: { ...operation('reports', 'patch', false), operationId: 'patchReportComponent', description: 'Updates one component using component-level optimistic concurrency.' },
+  };
+  paths['/api/v1/reports/{id}/commands/{command}'] = {
+    post: { ...operation('reports', 'post', false), operationId: 'executeNamedReportCommand', description: 'Runs a server-authoritative named workflow command with persisted quality gates.' },
+  };
+  paths['/api/v1/reports/{id}/quality-runs'] = {
+    post: { ...operation('reports', 'post', false), operationId: 'runReportQuality', description: 'Runs deterministic server-side readiness checks for a workflow stage.' },
+  };
+  paths['/api/v1/reports/{id}/quality-runs/latest'] = {
+    get: { ...operation('reports', 'get', false), operationId: 'getLatestReportQuality', description: 'Returns the quality run bound to the current workspace revision.' },
+  };
+  paths['/api/v1/reports/{id}/quality-runs/{runId}/waivers'] = {
+    post: { ...operation('reports', 'post', false), operationId: 'waiveReportQualityFinding', description: 'Records an authorised, reasoned waiver for an eligible quality finding.' },
+  };
+  paths['/api/v1/reports/{id}/review-rounds'] = {
+    get: { ...operation('reports', 'get', false), operationId: 'listReviewRounds' },
+    post: { ...operation('reports', 'post', false), operationId: 'startReviewRound', description: 'Starts a review round bound to an exact workspace revision.' },
+  };
+  paths['/api/v1/reports/{id}/review-comments'] = {
+    get: { ...operation('reports', 'get', false), operationId: 'listReviewComments' },
+    post: { ...operation('reports', 'post', false), operationId: 'createReviewComment', description: 'Creates a structured, evidence-linkable review comment.' },
+  };
+  paths['/api/v1/reports/{id}/review-comments/{commentId}'] = {
+    patch: { ...operation('reports', 'patch', false), operationId: 'updateReviewComment', description: 'Updates or resolves one review comment with optimistic concurrency.' },
+  };
+  paths['/api/v1/uploads/{id}/complete'] = {
+    post: { ...operation('uploads', 'post', false), operationId: 'completeEvidenceUpload', description: 'Verifies the immutable Storage generation and creates evidence metadata.' },
+  };
+  for (const resource of ['import-jobs', 'deliveries', 'maintenance-items', 'comparison-runs', 'service-orders', 'field-attendances', 'evidence-packs', 'portfolio-audits']) {
+    paths[`/api/v1/${resource}/{id}/commands/{command}`] = {
+      post: { ...operation(resource, 'post', false), operationId: `execute${resource.replace(/(^|-)([a-z])/gu, (_match: string, _dash: string, letter: string) => letter.toUpperCase())}Command`, description: 'Executes a guarded, idempotent named lifecycle command and writes audit and outbox records.' },
+    };
+  }
 
   return {
     openapi: '3.1.0',
     info: {
       title: 'Property Condition Report API',
-      version: '1.1.0',
+      version: '1.2.0',
       description: 'Server-authoritative Cloud Run API for agency-scoped property inspection operations.',
     },
     servers: [{ url: '/', description: 'Current Cloud Run service' }],

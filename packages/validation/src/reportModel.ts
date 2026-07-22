@@ -4,6 +4,8 @@ import {
   COMPONENT_CONDITION_CATEGORIES,
   COMPONENT_REVIEW_STATUSES,
   COMPONENT_TEST_STATUSES,
+  COMPONENT_TESTING_METHODS,
+  COMPONENT_VISIBILITY_STATES,
   COMPONENT_WORKING_STATUSES,
   type ReportAggregate,
 } from '@pcr/domain';
@@ -13,6 +15,8 @@ const conditions = new Set<string>(COMPONENT_CONDITION_CATEGORIES);
 const cleanliness = new Set<string>(COMPONENT_CLEANLINESS_CATEGORIES);
 const working = new Set<string>(COMPONENT_WORKING_STATUSES);
 const testing = new Set<string>(COMPONENT_TEST_STATUSES);
+const visibility = new Set<string>(COMPONENT_VISIBILITY_STATES);
+const testingMethods = new Set<string>(COMPONENT_TESTING_METHODS);
 const reviews = new Set<string>(COMPONENT_REVIEW_STATUSES);
 const comparisons = new Set<string>(COMPONENT_COMPARISON_STATUSES);
 
@@ -96,6 +100,7 @@ export const reportAggregateSchema: ValidationSchema<ReportAggregate> = {
           if (!result.ok) return result;
         }
         const categoryChecks = [
+          enumValue(component.value.visibility, visibility, `${prefix}.visibility`),
           enumValue(component.value.conditionCategory, conditions, `${prefix}.conditionCategory`),
           enumValue(component.value.cleanlinessCategory, cleanliness, `${prefix}.cleanlinessCategory`),
           enumValue(component.value.workingStatus, working, `${prefix}.workingStatus`),
@@ -105,6 +110,13 @@ export const reportAggregateSchema: ValidationSchema<ReportAggregate> = {
         ];
         const invalid = categoryChecks.find((result) => !result.ok);
         if (invalid && !invalid.ok) return invalid;
+        if (component.value.testingMethod !== undefined) {
+          const method = enumValue(component.value.testingMethod, testingMethods, `${prefix}.testingMethod`);
+          if (!method.ok) return method;
+        }
+        if (component.value.workingStatus === 'operation_confirmed' && (!component.value.testingMethod || component.value.testingMethod === 'not_tested')) {
+          return failure('operation_confirmed requires an explicit testingMethod.', `${prefix}.testingMethod`);
+        }
         if (typeof component.value.maintenanceRequired !== 'boolean') return failure('maintenanceRequired must be a boolean.', `${prefix}.maintenanceRequired`);
         if (!Array.isArray(component.value.defects) || component.value.defects.some((defect) => typeof defect !== 'string')) {
           return failure('defects must be an array of strings.', `${prefix}.defects`);

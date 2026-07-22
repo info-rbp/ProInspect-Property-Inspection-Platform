@@ -26,6 +26,7 @@ export interface WorkflowTransitionEvent<TStatus extends string> {
 }
 
 export class WorkflowError extends Error {
+  readonly status = 409;
   constructor(readonly code: 'INVALID_TRANSITION' | 'GATE_NOT_MET' | 'VERSION_CONFLICT' | 'REASON_REQUIRED', message: string) {
     super(message);
   }

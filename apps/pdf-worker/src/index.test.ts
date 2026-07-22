@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildArchiveManifest, buildRenderPackage, submitTenantResponse, verifyArchiveManifest } from './index.js';
+import { buildArchiveManifest, buildRenderPackage, DurablePdfProcessor, renderReportHtml, submitTenantResponse, verifyArchiveManifest } from './index.js';
 
 const renderInput = {
   reportId: 'report-1',
@@ -68,5 +68,27 @@ describe('tenant responses', () => {
         items: [{ componentId: 'front-door', response: 'disagree', photoIds: [] }],
       }),
     ).toThrow('require commentary');
+  });
+});
+
+describe('durable PDF processor', () => {
+  it('writes one immutable package and replays it without rendering twice', async () => {
+    const records = new Map<string, import('./index.js').GeneratedPackageRecord>();
+    let renderCalls = 0;
+    let generation = 0;
+    const processor = new DurablePdfProcessor(
+      { async render(html) { renderCalls += 1; expect(html).toContain('1 Example Street'); return new TextEncoder().encode('pdf bytes'); } },
+      { async write(objectPath, content) { generation += 1; return { objectPath, generation: String(generation), sha256: (await import('./index.js')).sha256(content) }; } },
+      { async get(id) { return records.get(id); }, async save(record) { records.set(record.id, record); } },
+    );
+    const first = await processor.process(renderInput, 'reviewer-1', '2026-07-20T02:00:00.000Z');
+    const second = await processor.process(renderInput, 'reviewer-1', '2026-07-20T02:00:00.000Z');
+    expect(first.id).toBe(second.id);
+    expect(renderCalls).toBe(1);
+    expect(verifyArchiveManifest(first.manifest)).toBe(true);
+  });
+
+  it('escapes report content in server-rendered HTML', () => {
+    expect(renderReportHtml({ ...renderInput, report: { propertyAddress: '<script>alert(1)</script>' } })).not.toContain('<script>');
   });
 });

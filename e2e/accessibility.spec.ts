@@ -8,6 +8,7 @@ const routes = [
   '/app/admin/reports',
   '/app/admin/users',
   '/app/admin/templates',
+  '/app/admin/operations',
   '/app/admin/settings',
 ];
 

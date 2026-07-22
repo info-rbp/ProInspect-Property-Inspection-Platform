@@ -28,6 +28,7 @@ const ReportDetailPage: React.FC = () => {
       <div className="flex gap-2">
         <Link to={`/app/admin/reports/${reportIndex.reportId}/edit`} className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white">Edit report</Link>
         <Link to={`/app/admin/reports/${reportIndex.reportId}/preview`} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Preview report</Link>
+        <Link to={`/app/admin/reports/${reportIndex.reportId}/review`} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900">Review workspace</Link>
       </div>
     </div>
   );

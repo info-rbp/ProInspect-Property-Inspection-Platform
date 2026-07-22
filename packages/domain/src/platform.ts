@@ -5,9 +5,13 @@ export type UserRole =
   | 'inspector'
   | 'analyst'
   | 'reviewer'
+  | 'property_manager'
+  | 'maintenance_coordinator'
   | 'tenant'
   | 'landlord'
   | 'shopify_customer';
+
+export type InspectionType = 'entry' | 'routine' | 'exit' | 'comparison' | 'maintenance';
 
 export type EntityStatus = 'active' | 'inactive' | 'archived';
 

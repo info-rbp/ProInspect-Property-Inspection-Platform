@@ -16,12 +16,15 @@ export type InternalSection =
   | 'reports'
   | 'users'
   | 'templates'
+  | 'operations'
   | 'settings';
 
 const ROLE_SECTIONS: Record<UserRole, InternalSection[]> = {
-  super_admin: ['dashboard', 'properties', 'jobs', 'reports', 'users', 'templates', 'settings'],
-  proinspect_admin: ['dashboard', 'properties', 'jobs', 'reports', 'users', 'templates', 'settings'],
-  operations: ['dashboard', 'properties', 'jobs', 'reports'],
+  super_admin: ['dashboard', 'properties', 'jobs', 'reports', 'users', 'templates', 'operations', 'settings'],
+  proinspect_admin: ['dashboard', 'properties', 'jobs', 'reports', 'users', 'templates', 'operations', 'settings'],
+  operations: ['dashboard', 'properties', 'jobs', 'reports', 'operations'],
+  property_manager: ['dashboard', 'properties', 'jobs', 'reports', 'operations'],
+  maintenance_coordinator: ['dashboard', 'properties', 'jobs', 'reports', 'operations'],
   inspector: ['dashboard'],
   analyst: ['dashboard', 'reports'],
   reviewer: ['dashboard', 'reports'],

@@ -31,6 +31,12 @@ interface ApiRequestOptions {
   entityId?: string;
   action?: string;
   baseVersion?: number;
+  workspaceRevision?: number;
+  fieldPatchPaths?: string[];
+  dependencyIds?: string[];
+  localSnapshotId?: string;
+  dataClassification?: 'standard' | 'personal' | 'sensitive';
+  conflictPolicy?: 'field_merge' | 'manual' | 'server_reject';
   queueWhenOffline?: boolean;
   announceSuccess?: boolean;
 }
@@ -103,6 +109,12 @@ export async function apiRequest<T>(
         body: init.body,
         idempotencyKey,
         baseVersion: init.baseVersion,
+        workspaceRevision: init.workspaceRevision,
+        fieldPatchPaths: init.fieldPatchPaths,
+        dependencyIds: init.dependencyIds,
+        localSnapshotId: init.localSnapshotId,
+        dataClassification: init.dataClassification ?? 'standard',
+        conflictPolicy: init.conflictPolicy ?? 'manual',
       });
       throw new OfflineQueuedError(queued.id);
     }

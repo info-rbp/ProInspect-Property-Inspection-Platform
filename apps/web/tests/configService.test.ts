@@ -2,7 +2,6 @@ import {
   clearRuntimeConfig,
   getRuntimeConfig,
   isFirebaseConfigured,
-  isAiConfigured,
   isCloudSyncEnabled,
   saveRuntimeConfig,
 } from '../services/configService';
@@ -21,7 +20,6 @@ describe('configService', () => {
       storageBucket: '',
       messagingSenderId: '',
       appId: '',
-      geminiApiKey: '',
       enableCloudSync: false,
     });
   });
@@ -34,12 +32,10 @@ describe('configService', () => {
       storageBucket: ' bucket ',
       messagingSenderId: ' sender ',
       appId: ' app-id ',
-      geminiApiKey: ' gemini-key ',
       enableCloudSync: true,
     });
 
     expect(getRuntimeConfig().apiKey).toBe('firebase-key');
-    expect(isAiConfigured()).toBe(true);
     expect(isCloudSyncEnabled()).toBe(true);
     expect(isFirebaseConfigured()).toBe(true);
   });

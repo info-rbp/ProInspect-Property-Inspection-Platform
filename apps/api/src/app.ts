@@ -68,12 +68,12 @@ function errorResponse(error: unknown, correlationId: string): ApiResponse {
   return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } } };
 }
 
-function reportRoute(urlValue: string | undefined): { reportId?: string; command?: string } | undefined {
+function reportRoute(urlValue: string | undefined): { reportId?: string; path: string[] } | undefined {
   const parts = new URL(urlValue ?? '/', 'http://localhost').pathname.split('/').filter(Boolean);
   if (parts[0] !== 'api' || parts[1] !== 'v1' || parts[2] !== 'reports') return undefined;
   return {
     ...(parts[3] ? { reportId: parts[3] } : {}),
-    ...(parts[4] ? { command: parts[4] } : {}),
+    path: parts.slice(4),
   };
 }
 
@@ -132,7 +132,7 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
           correlationId,
           agencyId,
           specialReportRoute.reportId,
-          specialReportRoute.command,
+          specialReportRoute.path,
         );
         if (reportResponse) {
           sendResponse(reportResponse);

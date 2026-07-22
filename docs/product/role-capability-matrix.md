@@ -25,23 +25,15 @@ A visible user-interface control is not an authorisation boundary. The Cloud Run
 | Inspector | `inspector` | Assigned field-inspection work and evidence submission |
 | Analyst | `analyst` | Evidence review, structured findings, commentary and maintenance validation |
 | Reviewer | `reviewer` | Independent report review, change requests and approval |
-| Property manager / issuing agent | `proinspect_admin` | Issue, tenant-response decisions and finalisation until a dedicated role is introduced |
-| Maintenance coordinator | `operations` | Maintenance validation, assignment and closure until a dedicated role is introduced |
+| Property manager / issuing agent | `property_manager` | Agency-authorised issue, tenant-response decisions, delivery and finalisation |
+| Maintenance coordinator | `maintenance_coordinator` | Maintenance validation, assignment, evidence verification and closure |
 | Tenant | `tenant` | Access only to issued reports linked to the tenant's tenancy |
 | Landlord / client | `landlord` | Restricted access to authorised property and report outputs |
 | Commerce customer | `shopify_customer` | Order and service-request access only; no implicit report administration rights |
 
 System services such as AI analysis, archive, notification and integration workers are service identities, not human `UserRole` values.
 
-## Planned role separation
-
-Phase 2 should evaluate introducing dedicated code roles for:
-
-- `property_manager`
-- `maintenance_coordinator`
-- `records_administrator`
-
-Until that decision is implemented, the table above is authoritative. The application must not invent additional role labels in screens, documentation or policies without updating this matrix.
+The dedicated property-manager and maintenance-coordinator roles are implemented in domain, API policy, Firebase rules and route visibility. A future `records_administrator` role still requires architecture review before introduction.
 
 # 2. Capability matrix
 

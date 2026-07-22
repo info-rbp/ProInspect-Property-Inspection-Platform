@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BriefcaseBusiness, ClipboardList, FileText, Gauge, Home, Settings, Users, Wrench, X } from 'lucide-react';
+import { BriefcaseBusiness, ClipboardList, FileText, Gauge, Home, ListChecks, Settings, Users, Wrench, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useShell } from '../../contexts/ShellContext';
 import type { InternalSection } from '../../services/platform/roleAccess';
@@ -16,7 +16,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/app/dashboard', section: 'dashboard', icon: Gauge },
   { label: 'Properties', to: '/app/admin/properties', section: 'properties', icon: Home },
   { label: 'Inspection Jobs', to: '/app/admin/jobs', section: 'jobs', icon: ClipboardList },
+  { label: 'Work Queue', to: '/app/admin/work-queue', section: 'jobs', icon: ListChecks },
   { label: 'Reports', to: '/app/admin/reports', section: 'reports', icon: FileText },
+  { label: 'Service Operations', to: '/app/admin/operations', section: 'operations', icon: BriefcaseBusiness },
   { label: 'Users', to: '/app/admin/users', section: 'users', icon: Users },
   { label: 'Templates', to: '/app/admin/templates', section: 'templates', icon: Wrench },
   { label: 'Settings', to: '/app/admin/settings', section: 'settings', icon: Settings },

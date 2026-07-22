@@ -10,7 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+*.tsbuildinfo
 *.local
+playwright-report
+test-results
 
 # Editor directories and files
 .vscode/*

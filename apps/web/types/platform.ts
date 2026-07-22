@@ -5,6 +5,8 @@ export type UserRole =
   | 'inspector'
   | 'analyst'
   | 'reviewer'
+  | 'property_manager'
+  | 'maintenance_coordinator'
   | 'tenant'
   | 'landlord'
   | 'shopify_customer';

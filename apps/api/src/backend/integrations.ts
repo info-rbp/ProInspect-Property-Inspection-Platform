@@ -10,7 +10,7 @@ function adminApp() {
 }
 
 export class FirestoreTaskOutbox implements TaskDispatcher {
-  async dispatch(kind: 'analysis' | 'pdf' | 'notification', agencyId: string, taskId: string, payload: Record<string, unknown>): Promise<void> {
+  async dispatch(kind: 'analysis' | 'pdf' | 'notification' | 'media' | 'import' | 'integration' | 'evidence_pack' | 'portfolio_audit', agencyId: string, taskId: string, payload: Record<string, unknown>): Promise<void> {
     const now = new Date().toISOString();
     await getFirestore(adminApp()).doc(`agencies/${agencyId}/taskOutbox/${taskId}`).create({
       id: taskId,
@@ -104,5 +104,29 @@ export class FirebaseUploadSessionIssuer implements UploadSessionIssuer {
     session.resumableUploadUrl = resumableUploadUrl;
     await this.evidence.createSession(session);
     return { ...session };
+  }
+
+  async complete(agencyId: string, uploadId: string, _input: Record<string, unknown>, principal: AuthenticatedPrincipal): Promise<Record<string, unknown>> {
+    if (!this.bucketName) throw Object.assign(new Error('Upload storage is not configured.'), { code: 'UPLOAD_STORAGE_NOT_CONFIGURED', status: 503 });
+    const sessionSnapshot = await getFirestore(adminApp()).doc(`agencies/${agencyId}/uploadSessions/${uploadId}`).get();
+    if (!sessionSnapshot.exists) throw Object.assign(new Error('Upload session not found.'), { code: 'UPLOAD_SESSION_NOT_FOUND', status: 404 });
+    const session = sessionSnapshot.data() as UploadSessionRecord;
+    if (session.issuedTo !== principal.uid) throw Object.assign(new Error('Only the upload-session owner can complete this upload.'), { code: 'UPLOAD_OWNER_MISMATCH', status: 403 });
+    const [metadata] = await getStorage(adminApp()).bucket(this.bucketName).file(session.objectPath).getMetadata();
+    const declaredHash = metadata.metadata?.sha256;
+    if (declaredHash && declaredHash !== session.sha256) throw Object.assign(new Error('Stored object hash metadata does not match the upload session.'), { code: 'PHOTO_HASH_MISMATCH', status: 422 });
+    if (Number(metadata.size) !== session.fileSize) throw Object.assign(new Error('Stored object size does not match the upload session.'), { code: 'PHOTO_SIZE_MISMATCH', status: 422 });
+    if (metadata.contentType !== session.contentType) throw Object.assign(new Error('Stored object content type does not match the upload session.'), { code: 'PHOTO_CONTENT_TYPE_MISMATCH', status: 422 });
+    const photo = await this.evidence.complete(agencyId, uploadId, {
+      bucket: this.bucketName,
+      objectPath: session.objectPath,
+      generation: String(metadata.generation),
+      ...(metadata.metageneration ? { metageneration: String(metadata.metageneration) } : {}),
+      contentType: metadata.contentType,
+      size: Number(metadata.size),
+      sha256: session.sha256,
+      completedAt: new Date().toISOString(),
+    });
+    return { ...photo };
   }
 }

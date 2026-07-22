@@ -1,5 +1,14 @@
-import type { AuthenticatedPrincipal, AuthorisationTarget, ReportAggregate, ReportLifecycleStatus, SecurityCapability } from '@pcr/domain';
+import type {
+  AuthenticatedPrincipal,
+  AuthorisationTarget,
+  ReportAggregate,
+  ReportAreaRecord,
+  ReportComponentRecord,
+  ReportLifecycleStatus,
+  SecurityCapability,
+} from '@pcr/domain';
 import type { SecurityDependencies } from '../security/types.js';
+import type { QualityRun, QualityStage, QualityWaiver } from '@pcr/quality';
 
 export interface StoredRecord {
   id: string;
@@ -37,6 +46,17 @@ export interface ReportTransitionCommand {
 export interface ReportAggregateStore {
   load(agencyId: string, reportId: string): Promise<ReportAggregate | undefined>;
   saveDraft(aggregate: ReportAggregate, expectedVersion: number | undefined, actorId: string): Promise<ReportAggregate>;
+  updateMetadata(agencyId: string, reportId: string, patch: Record<string, unknown>, expectedVersion: number, actorId: string, correlationId: string): Promise<Record<string, unknown>>;
+  createArea(agencyId: string, reportId: string, area: Record<string, unknown>, actorId: string, correlationId: string): Promise<ReportAreaRecord>;
+  updateArea(agencyId: string, reportId: string, areaId: string, patch: Record<string, unknown>, expectedVersion: number, actorId: string, correlationId: string): Promise<ReportAreaRecord>;
+  deleteArea(agencyId: string, reportId: string, areaId: string, expectedVersion: number, actorId: string, correlationId: string): Promise<void>;
+  createComponent(agencyId: string, reportId: string, areaId: string, component: Record<string, unknown>, actorId: string, correlationId: string): Promise<ReportComponentRecord>;
+  updateComponent(agencyId: string, reportId: string, areaId: string, componentId: string, patch: Record<string, unknown>, expectedVersion: number, actorId: string, correlationId: string): Promise<ReportComponentRecord>;
+  reorderAreas(agencyId: string, reportId: string, orderedIds: string[], actorId: string, correlationId: string): Promise<Record<string, unknown>>;
+  reorderComponents(agencyId: string, reportId: string, areaId: string, orderedIds: string[], actorId: string, correlationId: string): Promise<Record<string, unknown>>;
+  runQuality(agencyId: string, reportId: string, stage: QualityStage, actorId: string, correlationId: string): Promise<QualityRun>;
+  latestQuality(agencyId: string, reportId: string): Promise<QualityRun | undefined>;
+  waiveQuality(agencyId: string, reportId: string, runId: string, waiver: Omit<QualityWaiver, 'waivedAt'>, correlationId: string): Promise<QualityRun>;
   transition(agencyId: string, command: ReportTransitionCommand): Promise<Record<string, unknown>>;
 }
 
@@ -56,11 +76,12 @@ export interface IdempotencyStore {
 }
 
 export interface TaskDispatcher {
-  dispatch(kind: 'analysis' | 'pdf' | 'notification', agencyId: string, taskId: string, payload: Record<string, unknown>): Promise<void>;
+  dispatch(kind: 'analysis' | 'pdf' | 'notification' | 'media' | 'import' | 'integration' | 'evidence_pack' | 'portfolio_audit', agencyId: string, taskId: string, payload: Record<string, unknown>): Promise<void>;
 }
 
 export interface UploadSessionIssuer {
   create(agencyId: string, uploadId: string, input: Record<string, unknown>, principal: AuthenticatedPrincipal): Promise<Record<string, unknown>>;
+  complete(agencyId: string, uploadId: string, input: Record<string, unknown>, principal: AuthenticatedPrincipal): Promise<Record<string, unknown>>;
 }
 
 export interface ApiDependencies extends SecurityDependencies {

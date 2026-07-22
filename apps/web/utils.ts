@@ -1,5 +1,3 @@
-import heic2any from 'heic2any';
-
 export const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -83,6 +81,7 @@ export const processImageFile = async (file: File): Promise<File> => {
 
   if (isHeic) {
     try {
+      const { default: heic2any } = await import('heic2any');
       const sourceBlob = new Blob([await file.arrayBuffer()], { type: 'image/heic' });
       const result = await heic2any({
         blob: sourceBlob,

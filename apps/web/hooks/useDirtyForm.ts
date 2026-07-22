@@ -13,7 +13,7 @@ export const useDirtyForm = ({ scopeId, entityType, entityId }: UseDirtyFormOpti
     markScopeDirty({ id: scopeId, entityType, entityId, dirty: true });
   }, [entityId, entityType, markScopeDirty, scopeId]);
   const markClean = useCallback(() => markScopeClean(scopeId), [markScopeClean, scopeId]);
-  const handleDirtyCapture = useCallback((event: SyntheticEvent<HTMLElement>) => {
+  const handleDirty = useCallback((event: SyntheticEvent<HTMLElement>) => {
     const owner = (event.target as HTMLElement).closest<HTMLElement>('[data-dirty-scope]');
     if (owner && owner.dataset.dirtyScope !== scopeId) return;
     markDirty();
@@ -23,6 +23,8 @@ export const useDirtyForm = ({ scopeId, entityType, entityId }: UseDirtyFormOpti
     dirty: Boolean(dirtyScopes[scopeId]?.dirty),
     markDirty,
     markClean,
-    formProps: { 'data-dirty-scope': scopeId, onChangeCapture: handleDirtyCapture, onInputCapture: handleDirtyCapture },
-  }), [dirtyScopes, handleDirtyCapture, markClean, markDirty, scopeId]);
+    // Bubble after the field's own onChange handler. Updating the shell context
+    // during capture can rerender a controlled field before it stores its value.
+    formProps: { 'data-dirty-scope': scopeId, onChange: handleDirty },
+  }), [dirtyScopes, handleDirty, markClean, markDirty, scopeId]);
 };

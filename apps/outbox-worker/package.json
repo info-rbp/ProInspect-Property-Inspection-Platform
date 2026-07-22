@@ -1,0 +1,5 @@
+{
+  "name": "@pcr/outbox-worker", "private": true, "version": "0.1.0", "type": "module", "main": "./dist/index.js",
+  "scripts": { "build": "tsc -p tsconfig.build.json", "typecheck": "tsc --noEmit -p tsconfig.json", "test:run": "vitest run --passWithNoTests", "start": "node dist/index.js" },
+  "dependencies": { "firebase-admin": "14.2.0", "google-auth-library": "10.4.0" }
+}

@@ -3,9 +3,8 @@ import type { User } from 'firebase/auth';
 import type { InternalSection } from '../services/platform/roleAccess';
 import { canAccessSection, hasAnyRole } from '../services/platform/roleAccess';
 import { getOrCreateUserProfile } from '../services/platform/userProfileService';
-import { auth, isFirebaseConfigured, onAuthStateChanged, signInWithEmailPassword, signOutUser } from '../services/storageService';
+import { auth, isFirebaseConfigured, onAuthStateChanged, signInWithEmailPassword, signOutUser } from '../services/firebaseClient';
 import type { UserProfile, UserRole } from '../types/platform';
-import { seedMockData } from '../services/platform/mockDataSeeder';
 import { purgeOfflineQueueOnSignOut } from '../services/offline/queueSecurity';
 import { purgeOfflineWorkspace } from '../services/offlineWorkspace';
 
@@ -90,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserProfile(mockProfile);
 
       try {
+        const { seedMockData } = await import('../services/platform/mockDataSeeder');
         await seedMockData();
       } catch (error) {
         console.error('Failed to seed mock data:', error);

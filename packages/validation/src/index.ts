@@ -51,7 +51,7 @@ const workflowStatuses = new Set<WorkflowStatus>([
 ]);
 const roles = new Set<UserRole>([
   'super_admin', 'proinspect_admin', 'operations', 'inspector', 'analyst', 'reviewer', 'tenant',
-  'landlord', 'shopify_customer',
+  'property_manager', 'maintenance_coordinator', 'landlord', 'shopify_customer',
 ]);
 
 function validationError(message: string, details?: Record<string, unknown>): ValidationResult<never> {

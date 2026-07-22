@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import ReportBuilder from '../../components/reports/ReportBuilder';
+import { ReportWorkspacePage } from '../../features/report-workspace/components/ReportWorkspacePage';
 import { useDirtyForm } from '../../hooks/useDirtyForm';
 
 const ReportEditPage: React.FC = () => {
@@ -13,7 +13,7 @@ const ReportEditPage: React.FC = () => {
 
   return (
     <div {...formProps}>
-      <ReportBuilder />
+      <ReportWorkspacePage />
     </div>
   );
 };

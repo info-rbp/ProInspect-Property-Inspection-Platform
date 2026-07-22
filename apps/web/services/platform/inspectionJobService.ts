@@ -6,6 +6,29 @@ import { localGet, localList, localPut } from './localPlatformStore';
 
 export type CreateInspectionJobInput = Omit<InspectionJob, 'id' | 'status' | 'createdAt' | 'updatedAt'> &
   Partial<Pick<InspectionJob, 'status'>>;
+export interface BookInspectionJobInput {
+  agencyId: string;
+  propertyId: string;
+  tenancyId?: string;
+  inspectionType: 'entry' | 'routine' | 'exit';
+  scheduledAt: string;
+  templateId: string;
+  templateVersion: number;
+  sourceReportIds: string[];
+  baselineVersionIds?: string[];
+  assignedInspectorId?: string;
+  assignedReviewerId?: string;
+  accessInstructions?: Record<string, unknown>;
+}
+
+export interface BookingResult {
+  jobId: string;
+  reportId: string;
+  assignmentId: string;
+  jobVersion: number;
+  reportVersion: number;
+  workspaceRevision: number;
+}
 type VersionedInspectionJob = InspectionJob & { version?: number };
 
 export const createInspectionJob = async (input: CreateInspectionJobInput): Promise<InspectionJob> => {
@@ -26,6 +49,21 @@ export const createInspectionJob = async (input: CreateInspectionJobInput): Prom
   const inspectionJob: InspectionJob = { ...input, id: inspectionJobId, status: input.status || 'draft', createdAt: timestamp, updatedAt: timestamp };
   await localPut('inspectionJobs', inspectionJob, { dirtyScopeId: 'job:new', entityType: 'job', entityId: inspectionJobId, action: 'create', announceSuccess: true });
   return inspectionJob;
+};
+
+export const bookInspectionJob = async (input: BookInspectionJobInput): Promise<BookingResult> => {
+  if (!isFirebaseConfigured()) {
+    const reportType = input.inspectionType === 'entry' ? 'Property Condition Report' : input.inspectionType === 'routine' ? 'Routine Inspection' : 'Exit Inspection';
+    const job = await createInspectionJob({
+      agencyId: input.agencyId, propertyId: input.propertyId, ...(input.tenancyId ? { tenancyId: input.tenancyId } : {}),
+      reportType, scheduledAt: input.scheduledAt, ...(input.assignedInspectorId ? { assignedInspectorId: input.assignedInspectorId } : {}),
+      ...(input.assignedReviewerId ? { assignedReviewerId: input.assignedReviewerId } : {}), status: input.assignedInspectorId ? 'assigned' : 'booked',
+    });
+    return { jobId: job.id, reportId: `local-report-${job.id}`, assignmentId: `local-assignment-${job.id}`, jobVersion: 1, reportVersion: 1, workspaceRevision: 1 };
+  }
+  return apiRequest<BookingResult>(input.agencyId, '/api/v1/inspection-jobs/commands/book', {
+    method: 'POST', body: input, dirtyScopeId: 'job:new', entityType: 'job', action: 'book', announceSuccess: true,
+  });
 };
 
 export const getInspectionJob = async (inspectionJobId: string): Promise<InspectionJob | undefined> => {

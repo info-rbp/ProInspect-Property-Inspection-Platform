@@ -1,24 +1,11 @@
 import { pendingPhotos, updatePhotoProgress, type LocalPhotoQueueItem } from './offlineWorkspace';
 import { runShellOperation } from './runShellOperation';
-
-export interface UploadSessionResponse {
-  id: string;
-  status: string;
-  resumableUploadUrl?: string;
-  duplicatePhotoId?: string;
-}
+import { completeUploadSession, createUploadSession, type UploadSessionResponse } from '../features/evidence/api/evidenceClient';
 
 const CHUNK_SIZE = 8 * 1024 * 1024;
 
 async function createSession(item: LocalPhotoQueueItem): Promise<UploadSessionResponse> {
-  const response = await fetch('/api/v1/uploads', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-agency-id': item.agencyId,
-      'idempotency-key': `photo-${item.id}`,
-    },
-    body: JSON.stringify({
+  return createUploadSession(item.agencyId, {
       fileName: item.fileName,
       contentType: item.contentType,
       size: item.size,
@@ -28,11 +15,7 @@ async function createSession(item: LocalPhotoQueueItem): Promise<UploadSessionRe
       reportId: item.reportId,
       areaId: item.areaId,
       componentIds: item.componentIds,
-    }),
-  });
-  if (!response.ok) throw new Error(`Upload session failed with ${response.status}.`);
-  const payload = await response.json() as { data: UploadSessionResponse };
-  return payload.data;
+    }, `photo-${item.id}`);
 }
 
 async function uploadChunk(item: LocalPhotoQueueItem, uploadUrl: string, start: number): Promise<number> {
@@ -59,8 +42,10 @@ export async function syncPhoto(item: LocalPhotoQueueItem): Promise<void> {
   return runShellOperation({ kind: 'upload', title: 'Synchronising photo', source: item.id, persistence: 'cloud', entityType: 'photo', entityId: item.id, action: 'upload', attempt: item.attempts + 1 }, async () => {
     try {
     let uploadUrl: string | undefined = item.resumableUploadUrl;
+    let activeSessionId = item.uploadSessionId;
     if (!item.uploadSessionId || !uploadUrl) {
       const session = await createSession(item);
+      activeSessionId = session.id;
       if (session.status === 'duplicate') {
         await updatePhotoProgress(item.id, item.size, 'synced', { uploadSessionId: session.id });
         return;
@@ -77,8 +62,11 @@ export async function syncPhoto(item: LocalPhotoQueueItem): Promise<void> {
     let uploadedBytes = item.uploadedBytes;
     while (uploadedBytes < item.size) {
       uploadedBytes = await uploadChunk(item, activeUploadUrl, uploadedBytes);
-      await updatePhotoProgress(item.id, uploadedBytes, uploadedBytes === item.size ? 'synced' : 'uploading');
+      await updatePhotoProgress(item.id, uploadedBytes, 'uploading');
     }
+    if (!activeSessionId) throw new Error('Upload session ID is missing.');
+    await completeUploadSession(item.agencyId, activeSessionId, `photo-complete-${item.id}`);
+    await updatePhotoProgress(item.id, item.size, 'synced');
     } catch (error) {
       await updatePhotoProgress(item.id, item.uploadedBytes, 'failed', {
         attempts: item.attempts + 1,

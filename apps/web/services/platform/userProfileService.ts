@@ -1,7 +1,8 @@
-import { doc, getDoc } from 'firebase/firestore';
 import { getIdTokenResult, type User } from 'firebase/auth';
 import type { UserProfile, UserRole } from '../../types/platform';
-import { getFirestoreDb, isFirebaseConfigured } from '../storageService';
+import { apiRequest } from '../apiClient';
+import { isFirebaseConfigured } from '../firebaseClient';
+import { localList } from './localPlatformStore';
 
 const validRoles = new Set<UserRole>([
   'super_admin',
@@ -10,16 +11,26 @@ const validRoles = new Set<UserRole>([
   'inspector',
   'analyst',
   'reviewer',
+  'property_manager',
+  'maintenance_coordinator',
   'tenant',
   'landlord',
   'shopify_customer',
 ]);
+
+export const listUserProfiles = async (): Promise<UserProfile[]> => {
+  if (isFirebaseConfigured()) return apiRequest<UserProfile[]>(undefined, '/api/v1/users');
+  return localList<UserProfile>('users');
+};
 
 // Legacy offline forms still require an agency field. This sentinel is never
 // accepted as an authorisation source and cloud writes are API-only.
 export const DEFAULT_AGENCY_ID = 'unprovisioned-agency';
 
 export const getOrCreateUserProfile = async (user: User): Promise<UserProfile> => {
+  const [{ doc, getDoc }, { getFirestoreDb, isFirebaseConfigured }] = await Promise.all([
+    import('firebase/firestore'), import('../storageService'),
+  ]);
   const db = getFirestoreDb();
   if (!isFirebaseConfigured() || !db) {
     throw new Error('Identity Platform and Firestore must be configured. Local administrator fallback has been removed.');

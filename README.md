@@ -4,7 +4,7 @@ A property inspection platform for Entry Property Condition Reports, Routine Ins
 
 ## Current status
 
-Phase 1 product definition is complete. Phase 2 establishes a stable engineering baseline and monorepo structure. The current report-building interface remains operational while the production Google Cloud workflow is implemented through issues #3 through #10.
+The technical implementation plan has been implemented through the repository-local application, domain, API, worker, security and operational layers. External provider activation and production acceptance remain gated by real cloud projects, credentials, policy decisions and staging evidence. See the [implementation status](docs/implementation-status.md) for the exact boundary.
 
 ## Authoritative product documentation
 
@@ -21,12 +21,16 @@ Phase 1 product definition is complete. Phase 2 establishes a stable engineering
   /web
   /api
   /ai-worker
+  /media-worker
   /pdf-worker
+  /outbox-worker
 /packages
   /domain
   /validation
   /ui
   /templates
+  /quality
+  /integrations
   /testing
   /config
 /infrastructure
@@ -35,7 +39,7 @@ Phase 1 product definition is complete. Phase 2 establishes a stable engineering
   /cloud-deploy
 ```
 
-The web application contains the existing React and Vite report builder. The API and workers provide typed foundations for later Cloud Run deployment. Shared packages prevent each application from inventing its own interpretation of reports, errors, validation, configuration, and templates.
+The web application contains the inspection, review, queue and service-operations workspaces. The Cloud Run API owns material writes and lifecycle commands. Durable media, AI, PDF and outbox workers perform asynchronous work. Shared packages define reports, quality, templates, integrations, workflow and service-operation contracts.
 
 ## Local development
 
@@ -113,6 +117,6 @@ The approved target architecture uses:
 
 Terraform and Cloud Deploy directories are established as controlled infrastructure boundaries. Their environment implementation is tracked in issue #3.
 
-## Current runtime limitations
+## Activation boundary
 
-The existing web interface still uses browser-configured Gemini access, optional Firebase synchronisation, browser-generated PDFs, and prototype workflow controls. These are deliberately identified as transitional and are replaced by the subsequent implementation workstreams. A directory existing does not magically make a production service appear, despite generations of optimistic architecture diagrams suggesting otherwise.
+No source checkout is production-ready by itself. Direct PMS integration, public delivery, email/SMS, custom domains, workload identities and legal/retention policies require approved external configuration. Those paths fail closed until configured; no provider, credential or business authority is simulated. Production promotion remains subject to the gates in [release scope](docs/product/release-scope.md).

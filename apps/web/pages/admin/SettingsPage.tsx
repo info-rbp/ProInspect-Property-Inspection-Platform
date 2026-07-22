@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { isAiConfigured } from '../../services/configService';
 import { isFirebaseConfigured } from '../../services/storageService';
 import {
   connectGoogleWorkspace,
@@ -53,7 +52,7 @@ type IntegrationTab = 'drive' | 'calendar' | 'gmail' | 'docs' | 'chat' | 'forms'
 
 const SettingsPage: React.FC = () => {
   const firebaseConfigured = isFirebaseConfigured();
-  const aiConfigured = isAiConfigured();
+  const aiConfigured = Boolean(import.meta.env.VITE_API_BASE_URL?.trim());
 
   // Connection & Auth States
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -284,7 +283,7 @@ const SettingsPage: React.FC = () => {
               <h2 className="font-semibold text-gray-950">AI Commentary</h2>
             </div>
             <p className="mt-2 text-sm text-gray-600">
-              {aiConfigured ? 'Gemini API models and workers are connected' : 'AI models offline'}
+              {aiConfigured ? 'Server-managed Vertex AI workflow available' : 'Cloud API endpoint not configured'}
             </p>
           </div>
         </div>

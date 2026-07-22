@@ -19,6 +19,38 @@ export interface TemplateComponent {
   name: string;
   required: boolean;
   photoRequired: boolean;
+  rule?: TemplateComponentRule;
+}
+
+export interface EvidenceRequirement {
+  purpose: 'overview' | 'context' | 'defect' | 'testing' | 'meter' | 'key' | 'comparison' | 'completion';
+  minimum: number;
+  waiverAllowed: boolean;
+}
+
+export interface TemplateComponentRule {
+  componentId: string;
+  required: boolean;
+  conditionRequired: boolean;
+  cleanlinessRequired: boolean;
+  workingStatusRequired: boolean;
+  testMethodRequiredWhenConfirmed: boolean;
+  minimumEvidence: EvidenceRequirement[];
+  maintenanceExtractionEnabled: boolean;
+}
+
+export interface TemplateCompletionRule {
+  id: string;
+  description: string;
+  blocking: boolean;
+  waiverAllowed: boolean;
+}
+
+export interface TemplateWorkflowProfile {
+  analystApprovalRequired: boolean;
+  reviewerApprovalRequired: boolean;
+  reviewerIndependenceRequired: boolean;
+  tenantReview: 'disabled' | 'optional' | 'required';
 }
 
 export interface TemplateArea {
@@ -32,9 +64,25 @@ export interface InspectionTypeTemplate {
   version: number;
   inspectionType: InspectionType;
   propertyType: string;
+  jurisdiction?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  furnishingProfile?: 'furnished' | 'unfurnished' | 'either';
   status: TemplateStatus;
   areas: TemplateArea[];
   commentaryBank: CommentaryEntry[];
+  requiredMetadataFields?: string[];
+  completionRules?: TemplateCompletionRule[];
+  workflowProfile?: TemplateWorkflowProfile;
+  permittedApprovalRoles?: string[];
+  comparisonBaselineRequired?: boolean;
+  outputLayoutVersion?: string;
+  ownerSummaryLayoutVersion?: string;
+  brandingCompatibilityVersion?: number;
+  sourcePreset?: string;
+  sourceTemplateId?: string;
+  sourceTemplateVersion?: number;
+  contentHash?: string;
   createdAt: string;
   publishedAt?: string;
   retiredAt?: string;
@@ -91,7 +139,8 @@ export const templateKey = (template: Pick<InspectionTypeTemplate, 'id' | 'versi
 export function publishTemplate(template: InspectionTypeTemplate, publishedAt = new Date().toISOString()): InspectionTypeTemplate {
   if (template.status !== 'draft') throw new Error('Only draft templates can be published.');
   validateTemplate(template);
-  return structuredClone({ ...template, status: 'published', publishedAt });
+  const identity = templateIdentity(template);
+  return structuredClone({ ...template, status: 'published', publishedAt, contentHash: stableIdentityHash(identity) });
 }
 
 export function retireTemplate(template: InspectionTypeTemplate, retiredAt = new Date().toISOString()): InspectionTypeTemplate {
@@ -116,8 +165,44 @@ export function validateTemplate(template: InspectionTypeTemplate): void {
       if (!component.id.trim() || !component.name.trim()) throw new Error('Component identity and name are required.');
       if (componentIds.has(component.id)) throw new Error(`Duplicate component id in ${area.id}: ${component.id}`);
       componentIds.add(component.id);
+      if (component.rule && component.rule.componentId !== component.id) throw new Error(`Component rule identity mismatch in ${area.id}: ${component.id}`);
+      if (component.rule?.testMethodRequiredWhenConfirmed && !component.rule.workingStatusRequired) {
+        throw new Error(`Testing-method rules require working status in ${area.id}: ${component.id}`);
+      }
+      for (const requirement of component.rule?.minimumEvidence ?? []) {
+        if (!Number.isInteger(requirement.minimum) || requirement.minimum < 0) throw new Error(`Evidence minimum must be a non-negative integer in ${area.id}: ${component.id}`);
+      }
     }
   }
+  if (template.workflowProfile?.reviewerIndependenceRequired && !template.workflowProfile.reviewerApprovalRequired) {
+    throw new Error('Reviewer independence requires reviewer approval.');
+  }
+}
+
+export function templateIdentity(template: InspectionTypeTemplate): string {
+  const copy = structuredClone(template) as InspectionTypeTemplate;
+  delete copy.contentHash;
+  delete copy.publishedAt;
+  delete copy.retiredAt;
+  return canonical(copy);
+}
+
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (value && typeof value === 'object') return `{${Object.entries(value as Record<string, unknown>)
+    .filter(([, child]) => child !== undefined)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, child]) => `${JSON.stringify(key)}:${canonical(child)}`).join(',')}}`;
+  return JSON.stringify(value);
+}
+
+function stableIdentityHash(value: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const character of value) {
+    hash ^= BigInt(character.codePointAt(0) ?? 0);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return `fnv1a64:${hash.toString(16).padStart(16, '0')}`;
 }
 
 export function importCommentaryBank(rows: ImportRow[]): ImportValidationResult {
@@ -225,3 +310,5 @@ export const PCR_STANDARD_AREAS = [
   'Activity Room', 'Bathroom', 'Ensuite', 'Toilet / WC', 'Laundry', 'Security / Safety', 'General External Items',
   'Garden Shed / External Storage',
 ] as const;
+
+export * from './materialise.js';

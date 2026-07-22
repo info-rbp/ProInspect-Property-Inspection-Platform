@@ -87,13 +87,24 @@ export class FirestorePhotoEvidenceStore {
       transaction.create(getFirestore(adminApp()).doc(`agencies/${agencyId}/photoProcessingJobs/${photo.id}`), {
         id: photo.id,
         agencyId,
-        photoId: photo.id,
+        evidenceId: photo.id,
         objectPath: photo.objectPath,
-        sourceGeneration: completion.generation,
+        generation: completion.generation,
+        declaredContentType: photo.contentType,
+        sha256: photo.sha256,
         status: 'queued',
-        attempts: 0,
+        attempt: 0,
+        maxAttempts: 5,
         createdAt: now,
         updatedAt: now,
+      });
+      transaction.create(getFirestore(adminApp()).doc(`agencies/${agencyId}/taskOutbox/media-${photo.id}`), {
+        id: `media-${photo.id}`,
+        agencyId,
+        kind: 'media',
+        taskId: photo.id,
+        payload: { evidenceId: photo.id, objectPath: photo.objectPath, generation: completion.generation },
+        status: 'pending', attempts: 0, createdAt: now, updatedAt: now,
       });
       return photo;
     });

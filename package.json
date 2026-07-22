@@ -15,8 +15,8 @@
     "seed:staging": "node scripts/seed-staging.mjs",
     "emulators": "firebase emulators:start --config infrastructure/firebase/firebase.json --import=.firebase-emulator-data --export-on-exit=.firebase-emulator-data",
     "build": "npm run build:packages && npm run build:apps",
-    "build:packages": "npm run build --workspace @pcr/domain && npm run build --workspace @pcr/config && npm run build --workspace @pcr/validation && npm run build --workspace @pcr/templates && npm run build --workspace @pcr/testing && npm run build --workspace @pcr/ui",
-    "build:apps": "npm run build --workspace @pcr/web && npm run build --workspace @pcr/api && npm run build --workspace @pcr/ai-worker && npm run build --workspace @pcr/pdf-worker",
+    "build:packages": "npm run build --workspace @pcr/domain && npm run build --workspace @pcr/config && npm run build --workspace @pcr/validation && npm run build --workspace @pcr/templates && npm run build --workspace @pcr/quality && npm run build --workspace @pcr/integrations && npm run build --workspace @pcr/testing && npm run build --workspace @pcr/ui",
+    "build:apps": "npm run build --workspace @pcr/web && npm run build --workspace @pcr/api && npm run build --workspace @pcr/media-worker && npm run build --workspace @pcr/ai-worker && npm run build --workspace @pcr/pdf-worker && npm run build --workspace @pcr/outbox-worker",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "npm run build:packages && npm run typecheck:workspaces",
     "typecheck:workspaces": "npm run typecheck --workspaces --if-present",
@@ -33,7 +33,6 @@
     "prepare": "node scripts/verify-workspace.mjs"
   },
   "dependencies": {
-    "@google/genai": "^1.32.0",
     "firebase": "^12.6.0",
     "heic2any": "^0.0.4",
     "idb": "8.0.0",
@@ -52,7 +51,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
     "eslint": "^9.25.1",
-    "firebase-tools": "^14.12.0",
+    "firebase-tools": "^15.24.0",
     "jsdom": "^26.1.0",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.30.1",

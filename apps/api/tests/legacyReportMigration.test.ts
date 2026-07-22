@@ -26,11 +26,15 @@ describe('legacy report migration planner', () => {
     expect(plan.aggregate.report).not.toHaveProperty('rooms');
     expect(plan.aggregate.areas[0]?.components[0]).toMatchObject({
       component: 'Front Door',
+      visibility: 'visible',
+      testingMethod: 'not_tested',
+      workingStatus: 'untested',
       conditionCategory: 'repair_required',
       photoReferences: [{ photoId: 'photo-1', objectPath: 'agencies/agency-a/photos/photo-1.jpg' }],
     });
     expect(JSON.stringify(plan.aggregate)).not.toContain('base64');
-    expect(plan.warnings).toHaveLength(1);
+    expect(plan.warnings).toHaveLength(2);
+    expect(plan.warnings.join(' ')).toContain('explicit testing confirmation');
   });
 
   it('requires agency ownership before producing a migration plan', () => {

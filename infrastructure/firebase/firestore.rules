@@ -9,8 +9,8 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/agencies/$(agency)/memberships/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/agencies/$(agency)/memberships/$(request.auth.uid)).data.status == 'active';
     }
-    function internalRole() { return role() in ['proinspect_admin', 'operations', 'inspector', 'analyst', 'reviewer']; }
-    function privilegedRole() { return role() in ['proinspect_admin', 'reviewer']; }
+    function internalRole() { return role() in ['super_admin', 'proinspect_admin', 'operations', 'inspector', 'analyst', 'reviewer', 'property_manager', 'maintenance_coordinator']; }
+    function privilegedRole() { return role() in ['super_admin', 'proinspect_admin', 'reviewer', 'property_manager']; }
     function immutableStatus(status) { return status in ['reviewer_approved', 'ready_to_issue', 'issued_to_tenant', 'tenant_viewed', 'tenant_submitted', 'finalisation_ready', 'finalised', 'archived']; }
     function sameAgencyExisting() { return resource.data.agencyId == agencyId() && activeMembership(agencyId()); }
     function reportReadable(agency, reportId) {
@@ -65,11 +65,78 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      match /reviewRounds/{roundId} {
+        allow read: if reportReadable(agency, reportId);
+        allow create, update, delete: if false;
+      }
+
+      match /qualityRuns/{runId} {
+        allow read: if reportReadable(agency, reportId);
+        allow create, update, delete: if false;
+      }
+
       match /tenantResponses/{responseId} {
         allow read: if reportReadable(agency, reportId);
         allow create, update, delete: if false;
       }
     }
+
+    match /agencies/{agency}/templates/{templateId} {
+      allow read: if activeMembership(agency) && internalRole();
+      allow create, update, delete: if false;
+      match /versions/{versionId} {
+        allow read: if activeMembership(agency) && internalRole();
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /agencies/{agency}/evidenceLinks/{linkId} {
+      allow read: if activeMembership(agency) && internalRole();
+      allow create, update, delete: if false;
+    }
+
+    match /agencies/{agency}/workQueueItems/{itemId} {
+      allow read: if activeMembership(agency) && internalRole();
+      allow create, update, delete: if false;
+    }
+
+    match /agencies/{agency}/outboxEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /agencies/{agency}/sourceDocuments/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/importJobs/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/importCandidates/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/evidenceIndex/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/commentaryPhrases/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/ownerSummaries/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/deliveryPackages/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/externalReferences/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/maintenanceItems/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/comparisonRuns/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/componentComparisons/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/tenantInvitations/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/communicationJobs/{id} { allow read: if activeMembership(agency) && privilegedRole(); allow write: if false; }
+    match /agencies/{agency}/brandingVersions/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/offlinePackages/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/serviceOrders/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/fieldAttendances/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/integrationConnections/{id} { allow read: if activeMembership(agency) && privilegedRole(); allow write: if false; }
+    match /agencies/{agency}/evidencePacks/{id} { allow read: if activeMembership(agency) && privilegedRole(); allow write: if false; }
+    match /agencies/{agency}/portfolioAudits/{id} { allow read: if activeMembership(agency) && privilegedRole(); allow write: if false; }
+    match /agencies/{agency}/entitlements/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/serviceAreas/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/capacitySlots/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
+    match /agencies/{agency}/subscriptionUsageEvents/{id} { allow read: if activeMembership(agency) && privilegedRole(); allow write: if false; }
+    match /agencies/{agency}/accessProfiles/{id} { allow read, write: if false; }
+    match /agencies/{agency}/keys/{id} { allow read, write: if false; }
+    match /agencies/{agency}/keyMovements/{id} { allow read, write: if false; }
+    match /agencies/{agency}/taskOutbox/{id} { allow read, write: if false; }
+    match /agencies/{agency}/photoProcessingJobs/{id} { allow read, write: if false; }
+    match /agencies/{agency}/mediaResults/{id} { allow read, write: if false; }
+    match /agencies/{agency}/pdfPackages/{id} { allow read, write: if false; }
+    match /agencies/{agency}/analysisJobs/{id} { allow read, write: if false; }
+    match /agencies/{agency}/analysisResults/{id} { allow read: if activeMembership(agency) && internalRole(); allow write: if false; }
 
     match /properties/{id} {
       allow read: if sameAgencyExisting() && internalRole();
