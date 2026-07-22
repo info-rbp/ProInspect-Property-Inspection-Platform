@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BriefcaseBusiness, ClipboardList, FileText, Gauge, Home, Settings, Users, Wrench } from 'lucide-react';
+import { BriefcaseBusiness, ClipboardList, FileText, Gauge, Home, Settings, Users, Wrench, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useShell } from '../../contexts/ShellContext';
 import type { InternalSection } from '../../services/platform/roleAccess';
 
 interface NavItem {
@@ -21,20 +22,27 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Settings', to: '/app/admin/settings', section: 'settings', icon: Settings },
 ];
 
-const Sidebar: React.FC = () => {
-  const { canAccess } = useAuth();
+const Sidebar: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
+  const { canAccess, userProfile } = useAuth();
+  const { setMobileNavigationOpen } = useShell();
   const visibleItems = NAV_ITEMS.filter((item) => canAccess(item.section));
+  const release = import.meta.env.VITE_APP_VERSION || 'Development build';
 
   return (
-    <aside className="border-r border-gray-200 bg-white lg:sticky lg:top-0 lg:h-screen">
+    <aside className="relative flex h-full min-h-screen flex-col border-r border-gray-200 bg-white lg:sticky lg:top-0 lg:h-screen">
       <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-5">
         <div className="grid h-9 w-9 place-items-center rounded bg-gray-950 text-sm font-black text-white">PI</div>
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="text-sm font-bold text-gray-950">ProInspect</div>
-          <div className="text-xs text-gray-500">Inspection platform</div>
+          <div className="truncate text-xs text-gray-500">Inspection platform</div>
         </div>
+        {mobile ? (
+          <button type="button" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-950" onClick={() => setMobileNavigationOpen(false)} aria-label="Close navigation">
+            <X size={20} />
+          </button>
+        ) : null}
       </div>
-      <nav className="grid gap-1 p-3">
+      <nav aria-label="Primary navigation" className="grid gap-1 p-3">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -42,21 +50,23 @@ const Sidebar: React.FC = () => {
               key={item.to}
               to={item.to}
               className={({ isActive }) => [
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition',
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2',
                 isActive ? 'bg-gray-950 text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-950',
               ].join(' ')}
             >
-              <Icon size={18} />
+              <Icon size={18} aria-hidden="true" />
               {item.label}
             </NavLink>
           );
         })}
       </nav>
-      <div className="mx-3 mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-        Stage 1 foundation: platform shells and collection services are active.
-      </div>
-      <div className="absolute bottom-4 left-3 right-3 hidden rounded-lg border border-gray-200 p-3 text-xs text-gray-500 lg:block">
-        <BriefcaseBusiness size={16} className="mb-2" />
+      <section className="mx-3 mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700" aria-label="System status">
+        <div className="font-bold text-gray-950">System status</div>
+        <div className="mt-1">Release: {release}</div>
+        <div className="mt-1">Agency: {userProfile?.agencyId || 'Not assigned'}</div>
+      </section>
+      <div className="mt-auto m-3 rounded-lg border border-gray-200 p-3 text-xs text-gray-500">
+        <BriefcaseBusiness size={16} className="mb-2" aria-hidden="true" />
         Internal ProInspect workspace
       </div>
     </aside>
