@@ -85,7 +85,7 @@ const AppShell: React.FC = () => {
       <div className="hidden lg:block"><Sidebar /></div>
       {mobileNavigationOpen ? (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Application navigation">
-          <button type="button" className="absolute inset-0 bg-gray-950/50" onClick={() => setMobileNavigationOpen(false)} aria-label="Close navigation" />
+          <button type="button" className="absolute inset-0 bg-gray-950/50" onClick={() => setMobileNavigationOpen(false)} aria-label="Dismiss navigation backdrop" />
           <div ref={drawerRef} className="relative h-full w-[min(20rem,88vw)] shadow-2xl"><Sidebar mobile /></div>
         </div>
       ) : null}
