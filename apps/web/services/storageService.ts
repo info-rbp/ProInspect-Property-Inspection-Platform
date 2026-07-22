@@ -11,6 +11,7 @@ import {
 import { openDB } from 'idb';
 import type { Photo, ReportData, Room } from '../types';
 import { apiRequest } from './apiClient';
+import { runShellOperation } from './runShellOperation';
 import { getResolvedFirebaseConfig, isFirebaseConfigured as isFirebaseConfigResolved } from './configService';
 
 export let db: ReturnType<typeof getFirestore> | undefined;
@@ -236,13 +237,26 @@ export const saveReportToDB = async (report: ReportData): Promise<ReportData> =>
   const timestamp = new Date().toISOString();
   const prepared = { ...report, createdAt: report.createdAt || timestamp, updatedAt: timestamp };
   if (!isFirebaseConfigured() || !auth) {
-    const localDB = await initLocalDB();
-    await localDB.put(LOCAL_STORE_NAME, prepared);
-    return prepared;
+    return runShellOperation({
+      kind: 'save', title: 'Saving report', source: LOCAL_STORE_NAME, persistence: 'local',
+      dirtyScopeId: `report:${report.id}`, entityType: 'report', entityId: report.id,
+      action: report.createdAt ? 'update' : 'create', announceSuccess: true,
+    }, async () => {
+      const localDB = await initLocalDB();
+      await localDB.put(LOCAL_STORE_NAME, prepared);
+      return prepared;
+    });
   }
   const stored = await apiRequest<ReportAggregatePayload>(report.agencyId, `/api/v1/reports/${report.id}/aggregate`, {
     method: 'PUT',
     body: toAggregate(prepared),
+    dirtyScopeId: `report:${report.id}`,
+    entityType: 'report',
+    entityId: report.id,
+    action: report.createdAt ? 'update' : 'create',
+    baseVersion: (report as ReportData & { version?: number }).version,
+    queueWhenOffline: true,
+    announceSuccess: true,
   });
   return fromAggregate(stored);
 };
@@ -265,12 +279,16 @@ export const getAllSavedReports = async (): Promise<ReportData[]> => {
 
 export const deleteReportFromDB = async (id: string): Promise<void> => {
   if (!isFirebaseConfigured() || !auth) {
-    await (await initLocalDB()).delete(LOCAL_STORE_NAME, id);
+    await runShellOperation({ kind: 'save', title: 'Deleting report', source: LOCAL_STORE_NAME, persistence: 'local', entityType: 'report', entityId: id, action: 'delete', announceSuccess: true }, async () => {
+      await (await initLocalDB()).delete(LOCAL_STORE_NAME, id);
+    });
     return;
   }
   const existing = await apiRequest<ReportAggregatePayload>(undefined, `/api/v1/reports/${id}/aggregate`);
   await apiRequest<Record<string, unknown>>(String(existing.report.agencyId), `/api/v1/reports/${id}/transitions`, {
     method: 'POST',
     body: { status: 'cancelled', expectedVersion: existing.report.version ?? 1, reason: 'draft_deleted_by_operator' },
+    baseVersion: existing.report.version ?? 1,
+    entityType: 'report', entityId: id, action: 'delete', announceSuccess: true,
   });
 };

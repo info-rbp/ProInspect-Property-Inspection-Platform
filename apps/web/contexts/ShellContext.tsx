@@ -11,11 +11,23 @@ export interface ShellNotification {
   tone: NotificationTone;
 }
 
-interface ShellContextValue {
+export type DirtyEntityType = 'property' | 'job' | 'report' | 'template' | 'user' | 'settings';
+
+export interface DirtyScope {
+  id: string;
+  entityType: DirtyEntityType;
+  entityId?: string;
+  dirty: boolean;
+}
+
+export interface ShellContextValue {
   mobileNavigationOpen: boolean;
   setMobileNavigationOpen: (open: boolean) => void;
   hasPendingChanges: boolean;
-  setHasPendingChanges: (pending: boolean) => void;
+  dirtyScopes: Record<string, DirtyScope>;
+  markDirty: (scope: DirtyScope) => void;
+  markClean: (scopeId: string) => void;
+  clearAll: () => void;
   notifications: ShellNotification[];
   notify: (notification: Omit<ShellNotification, 'id'>) => void;
   dismissNotification: (id: string) => void;
@@ -30,7 +42,7 @@ const ShellContext = createContext<ShellContextValue | undefined>(undefined);
 
 export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
-  const [hasPendingChanges, setHasPendingChanges] = useState(false);
+  const [dirtyScopes, setDirtyScopes] = useState<Record<string, DirtyScope>>({});
   const [notifications, setNotifications] = useState<ShellNotification[]>([]);
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
   const [persistenceMode, setPersistenceMode] = useState<PersistenceMode>('local');
@@ -38,6 +50,22 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [syncFailed, setSyncFailed] = useState(false);
   const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string>();
   const [lastSavedVersion, setLastSavedVersion] = useState<number>();
+  const hasPendingChanges = useMemo(() => Object.values(dirtyScopes).some((scope) => scope.dirty), [dirtyScopes]);
+
+  const markDirty = useCallback((scope: DirtyScope) => {
+    setDirtyScopes((current) => ({ ...current, [scope.id]: { ...scope, dirty: true } }));
+  }, []);
+
+  const markClean = useCallback((scopeId: string) => {
+    setDirtyScopes((current) => {
+      if (!current[scopeId]) return current;
+      const next = { ...current };
+      delete next[scopeId];
+      return next;
+    });
+  }, []);
+
+  const clearAll = useCallback(() => setDirtyScopes({}), []);
 
   const notify = useCallback((notification: Omit<ShellNotification, 'id'>) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -88,7 +116,7 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSyncFailed(false);
       }
       if (operation.recordVersion !== undefined) setLastSavedVersion(operation.recordVersion);
-      if (operation.clearDirty) setHasPendingChanges(false);
+      if (operation.dirtyScopeId) markClean(operation.dirtyScopeId);
       if (operation.announceSuccess) notify({ title: operation.title, message: operation.message, tone: 'success' });
       return;
     }
@@ -100,28 +128,9 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       message: operation.message || 'The operation did not complete. Review the record and try again.',
       tone: 'error',
     });
-  }), [notify]);
+  }), [markClean, notify]);
 
   useEffect(() => {
-    const nativeAlert = window.alert.bind(window);
-    window.alert = (value?: unknown) => {
-      const message = String(value ?? '');
-      const normalized = message.toLowerCase();
-      if (/failed|failure|error|unable/.test(normalized)) {
-        const kind = classifyOperationalFailure(message);
-        if (kind === 'save' || kind === 'sync') setSyncFailed(true);
-        notify({ title: `${kind === 'analysis' ? 'AI analysis' : kind} failed`, message, tone: 'error' });
-      } else if (/report saved/.test(normalized)) {
-        const mode: PersistenceMode = /cloud/.test(normalized) ? 'cloud' : 'local';
-        setPersistenceMode(mode);
-        setLastSuccessfulSyncAt(new Date().toISOString());
-        setSyncFailed(false);
-        setHasPendingChanges(false);
-        notify({ title: 'Report saved', message, tone: 'success' });
-      }
-      nativeAlert(value);
-    };
-
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const message = event.reason instanceof Error ? event.reason.message : String(event.reason || 'An operation failed unexpectedly.');
       const kind = classifyOperationalFailure(message);
@@ -129,7 +138,6 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
     return () => {
-      window.alert = nativeAlert;
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, [notify]);
@@ -140,12 +148,12 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!window.confirm('You have unsaved changes. Leave this page and discard them?')) {
         window.history.go(1);
       } else {
-        setHasPendingChanges(false);
+        clearAll();
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [hasPendingChanges]);
+  }, [clearAll, hasPendingChanges]);
 
   const synchronisationStatus = useMemo<SynchronisationStatus>(() => {
     if (!online) return 'offline';
@@ -160,7 +168,10 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     mobileNavigationOpen,
     setMobileNavigationOpen,
     hasPendingChanges,
-    setHasPendingChanges,
+    dirtyScopes,
+    markDirty,
+    markClean,
+    clearAll,
     notifications,
     notify,
     dismissNotification,
@@ -169,7 +180,7 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     activeOperationCount: Object.keys(activeOperations).length,
     lastSuccessfulSyncAt,
     lastSavedVersion,
-  }), [activeOperations, dismissNotification, hasPendingChanges, lastSavedVersion, lastSuccessfulSyncAt, mobileNavigationOpen, notifications, notify, persistenceMode, synchronisationStatus]);
+  }), [activeOperations, clearAll, dirtyScopes, dismissNotification, hasPendingChanges, lastSavedVersion, lastSuccessfulSyncAt, markClean, markDirty, mobileNavigationOpen, notifications, notify, persistenceMode, synchronisationStatus]);
 
   return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;
 };

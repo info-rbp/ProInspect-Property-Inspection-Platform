@@ -11,6 +11,15 @@ export interface ShellOperationDetail {
   source?: string;
   persistence?: PersistenceMode;
   recordVersion?: number;
+  entityType?: string;
+  entityId?: string;
+  action?: string;
+  dirtyScopeId?: string;
+  correlationId?: string;
+  errorCode?: string;
+  httpStatus?: number;
+  retryable?: boolean;
+  attempt?: number;
   clearDirty?: boolean;
   announceSuccess?: boolean;
   occurredAt: string;

@@ -13,7 +13,7 @@ const AppShell: React.FC = () => {
   const navigate = useNavigate();
   const drawerRef = useRef<HTMLDivElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
-  const { hasPendingChanges, mobileNavigationOpen, setHasPendingChanges, setMobileNavigationOpen } = useShell();
+  const { clearAll, hasPendingChanges, mobileNavigationOpen, setMobileNavigationOpen } = useShell();
 
   useEffect(() => {
     setMobileNavigationOpen(false);
@@ -56,7 +56,7 @@ const AppShell: React.FC = () => {
 
   const confirmNavigation = (nextPath: string) => {
     if (!hasPendingChanges || window.confirm('You have unsaved changes. Leave this page and discard them?')) {
-      setHasPendingChanges(false);
+      clearAll();
       navigate(nextPath);
     }
   };
@@ -72,15 +72,8 @@ const AppShell: React.FC = () => {
     confirmNavigation(nextPath);
   };
 
-  const handleEditableCapture = (event: React.SyntheticEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement;
-    const form = target.closest('form');
-    if (!form || form.dataset.shellIgnoreDirty === 'true' || target.dataset.shellIgnoreDirty === 'true') return;
-    setHasPendingChanges(true);
-  };
-
   return (
-    <div onClickCapture={handleNavigationCapture} onChangeCapture={handleEditableCapture} onInputCapture={handleEditableCapture} className="min-h-screen bg-gray-50 text-gray-950 lg:grid lg:grid-cols-[260px_1fr]">
+    <div onClickCapture={handleNavigationCapture} className="min-h-screen bg-gray-50 text-gray-950 lg:grid lg:grid-cols-[260px_1fr]">
       <a href="#main-content" className="sr-only z-[100] rounded bg-gray-950 px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
       <div className="hidden lg:block"><Sidebar /></div>
       {mobileNavigationOpen ? (

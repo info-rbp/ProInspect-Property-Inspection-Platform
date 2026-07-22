@@ -9,15 +9,22 @@ export type CreateInspectionJobInput = Omit<InspectionJob, 'id' | 'status' | 'cr
 type VersionedInspectionJob = InspectionJob & { version?: number };
 
 export const createInspectionJob = async (input: CreateInspectionJobInput): Promise<InspectionJob> => {
+  const inspectionJobId = generateId();
   if (isFirebaseConfigured()) {
     return apiRequest<InspectionJob>(input.agencyId, '/api/v1/inspection-jobs', {
       method: 'POST',
-      body: { ...input, id: generateId(), status: input.status || 'draft' },
+      body: { ...input, id: inspectionJobId, status: input.status || 'draft' },
+      dirtyScopeId: 'job:new',
+      entityType: 'job',
+      entityId: inspectionJobId,
+      action: 'create',
+      queueWhenOffline: true,
+      announceSuccess: true,
     });
   }
   const timestamp = new Date().toISOString();
-  const inspectionJob: InspectionJob = { ...input, id: generateId(), status: input.status || 'draft', createdAt: timestamp, updatedAt: timestamp };
-  await localPut('inspectionJobs', inspectionJob);
+  const inspectionJob: InspectionJob = { ...input, id: inspectionJobId, status: input.status || 'draft', createdAt: timestamp, updatedAt: timestamp };
+  await localPut('inspectionJobs', inspectionJob, { dirtyScopeId: 'job:new', entityType: 'job', entityId: inspectionJobId, action: 'create', announceSuccess: true });
   return inspectionJob;
 };
 
@@ -46,10 +53,17 @@ export const updateInspectionJob = async (
     return apiRequest<InspectionJob>(existing.agencyId, `/api/v1/inspection-jobs/${inspectionJobId}`, {
       method: 'PATCH',
       body: { ...updates, expectedVersion: (existing as VersionedInspectionJob).version ?? 1 },
+      baseVersion: (existing as VersionedInspectionJob).version ?? 1,
+      dirtyScopeId: `job:${inspectionJobId}`,
+      entityType: 'job',
+      entityId: inspectionJobId,
+      action: 'update',
+      queueWhenOffline: true,
+      announceSuccess: true,
     });
   }
   const updatedInspectionJob: InspectionJob = { ...existing, ...updates, id: inspectionJobId, updatedAt: new Date().toISOString() };
-  await localPut('inspectionJobs', updatedInspectionJob);
+  await localPut('inspectionJobs', updatedInspectionJob, { dirtyScopeId: `job:${inspectionJobId}`, entityType: 'job', entityId: inspectionJobId, action: 'update', announceSuccess: true });
   return updatedInspectionJob;
 };
 
@@ -69,6 +83,11 @@ export const updateInspectionJobStatus = async (
     return apiRequest<InspectionJob>(existing.agencyId, `/api/v1/inspection-jobs/${inspectionJobId}/transitions`, {
       method: 'POST',
       body: { status, expectedVersion: (existing as VersionedInspectionJob).version ?? 1 },
+      baseVersion: (existing as VersionedInspectionJob).version ?? 1,
+      entityType: 'job',
+      entityId: inspectionJobId,
+      action: 'transition',
+      announceSuccess: true,
     });
   }
   return updateInspectionJob(inspectionJobId, { status });

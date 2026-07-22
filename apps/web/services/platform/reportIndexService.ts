@@ -41,14 +41,19 @@ export const upsertReportIndexFromReport = async (report: ReportData): Promise<R
       return apiRequest<ReportIndex>(report.agencyId, `/api/v1/reports/${report.id}`, {
         method: 'PATCH',
         body: { ...reportIndexCommand(reportIndex), expectedVersion: (existing as VersionedReportIndex).version ?? 1 },
+        baseVersion: (existing as VersionedReportIndex).version ?? 1,
+        dirtyScopeId: `report:${report.id}`,
+        entityType: 'report', entityId: report.id, action: 'update', queueWhenOffline: true,
       });
     }
     return apiRequest<ReportIndex>(report.agencyId, '/api/v1/reports', {
       method: 'POST',
       body: { id: report.id, ...reportIndexCommand(reportIndex) },
+      dirtyScopeId: `report:${report.id}`,
+      entityType: 'report', entityId: report.id, action: 'create', queueWhenOffline: true,
     });
   }
-  await localPut('reportIndexes', reportIndex);
+  await localPut('reportIndexes', reportIndex, { dirtyScopeId: `report:${report.id}`, entityType: 'report', entityId: report.id, action: existing ? 'update' : 'create' });
   return reportIndex;
 };
 
@@ -99,10 +104,12 @@ export const updateReportLifecycleStatus = async (
     return apiRequest<ReportIndex>(existing.agencyId, `/api/v1/reports/${reportId}/transitions`, {
       method: 'POST',
       body: { status: lifecycleStatus, expectedVersion: (existing as VersionedReportIndex).version ?? 1 },
+      baseVersion: (existing as VersionedReportIndex).version ?? 1,
+      entityType: 'report', entityId: reportId, action: 'transition', announceSuccess: true,
     });
   }
   const updatedReportIndex: ReportIndex = { ...existing, lifecycleStatus, updatedAt: new Date().toISOString() };
-  await localPut('reportIndexes', updatedReportIndex);
+  await localPut('reportIndexes', updatedReportIndex, { entityType: 'report', entityId: reportId, action: 'transition', announceSuccess: true });
   return updatedReportIndex;
 };
 

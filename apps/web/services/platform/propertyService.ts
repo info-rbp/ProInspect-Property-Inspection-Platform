@@ -10,15 +10,22 @@ export type CreatePropertyInput = Omit<PropertyRecord, 'id' | 'status' | 'create
 type VersionedProperty = PropertyRecord & { version?: number };
 
 export const createProperty = async (input: CreatePropertyInput): Promise<PropertyRecord> => {
+  const propertyId = generateId();
   if (isFirebaseConfigured()) {
     return apiRequest<PropertyRecord>(input.agencyId, '/api/v1/properties', {
       method: 'POST',
-      body: { ...input, id: generateId(), clientIds: input.clientIds || [], status: input.status || 'active' },
+      body: { ...input, id: propertyId, clientIds: input.clientIds || [], status: input.status || 'active' },
+      dirtyScopeId: 'property:new',
+      entityType: 'property',
+      entityId: propertyId,
+      action: 'create',
+      queueWhenOffline: true,
+      announceSuccess: true,
     });
   }
   const timestamp = new Date().toISOString();
-  const property: PropertyRecord = { ...input, id: generateId(), clientIds: input.clientIds || [], status: input.status || 'active', createdAt: timestamp, updatedAt: timestamp };
-  await localPut('properties', property);
+  const property: PropertyRecord = { ...input, id: propertyId, clientIds: input.clientIds || [], status: input.status || 'active', createdAt: timestamp, updatedAt: timestamp };
+  await localPut('properties', property, { dirtyScopeId: 'property:new', entityType: 'property', entityId: propertyId, action: 'create', announceSuccess: true });
   return property;
 };
 
@@ -44,10 +51,17 @@ export const updateProperty = async (propertyId: string, updates: Partial<Omit<P
     return apiRequest<PropertyRecord>(existing.agencyId, `/api/v1/properties/${propertyId}`, {
       method: 'PATCH',
       body: { ...updates, expectedVersion: (existing as VersionedProperty).version ?? 1 },
+      baseVersion: (existing as VersionedProperty).version ?? 1,
+      dirtyScopeId: `property:${propertyId}`,
+      entityType: 'property',
+      entityId: propertyId,
+      action: 'update',
+      queueWhenOffline: true,
+      announceSuccess: true,
     });
   }
   const updatedProperty: PropertyRecord = { ...existing, ...updates, id: propertyId, updatedAt: new Date().toISOString() };
-  await localPut('properties', updatedProperty);
+  await localPut('properties', updatedProperty, { dirtyScopeId: `property:${propertyId}`, entityType: 'property', entityId: propertyId, action: 'update', announceSuccess: true });
   return updatedProperty;
 };
 

@@ -1,7 +1,9 @@
 import { getApp } from 'firebase/app';
 import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from 'firebase/app-check';
 import { getAuth } from 'firebase/auth';
-import { createShellOperationId, emitShellOperation } from './shellEvents';
+import { runShellOperation } from './runShellOperation';
+import { enqueueMutation } from './offline/offlineQueue';
+import { canQueueMutation } from './offline/queueSecurity';
 
 interface ApiEnvelope<T> {
   data: T;
@@ -16,6 +18,31 @@ interface ApiErrorEnvelope {
     correlationId?: string;
     details?: Record<string, unknown>;
   };
+}
+
+type MutationMethod = 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+
+interface ApiRequestOptions {
+  method?: 'GET' | MutationMethod;
+  body?: unknown;
+  idempotencyKey?: string;
+  dirtyScopeId?: string;
+  entityType?: string;
+  entityId?: string;
+  action?: string;
+  baseVersion?: number;
+  queueWhenOffline?: boolean;
+  announceSuccess?: boolean;
+}
+
+class OfflineQueuedError extends Error {
+  code = 'OFFLINE_QUEUED';
+  retryable = true;
+
+  constructor(public queueId: string) {
+    super('The change is saved in the offline queue and will synchronise when this user reconnects.');
+    this.name = 'OfflineQueuedError';
+  }
 }
 
 let appCheck: AppCheck | undefined;
@@ -45,15 +72,11 @@ function newIdempotencyKey(): string {
 export async function apiRequest<T>(
   agencyId: string | undefined,
   path: string,
-  init: { method?: 'GET' | 'POST' | 'PATCH' | 'PUT'; body?: unknown; idempotencyKey?: string } = {},
+  init: ApiRequestOptions = {},
 ): Promise<T> {
   const method = init.method ?? 'GET';
-  const operationId = createShellOperationId(`api-${method.toLowerCase()}`);
-  if (method !== 'GET') {
-    emitShellOperation({ id: operationId, kind: 'sync', status: 'started', title: 'Synchronising changes', source: path, persistence: 'cloud' });
-  }
-
-  try {
+  const idempotencyKey = init.idempotencyKey ?? newIdempotencyKey();
+  const execute = async (): Promise<T> => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
     if (!baseUrl) throw new Error('VITE_API_BASE_URL is required for cloud operations.');
     let user;
@@ -67,6 +90,22 @@ export async function apiRequest<T>(
     const claimAgency = typeof tokenResult.claims.agencyId === 'string' ? tokenResult.claims.agencyId : undefined;
     const resolvedAgencyId = agencyId || user.tenantId || claimAgency;
     if (!resolvedAgencyId) throw new Error('The signed-in identity is not linked to an agency.');
+
+    if (method !== 'GET' && !navigator.onLine && init.queueWhenOffline && canQueueMutation(method, path)) {
+      const queued = await enqueueMutation({
+        id: idempotencyKey,
+        agencyId: resolvedAgencyId,
+        actorId: user.uid,
+        entityType: init.entityType ?? 'record',
+        entityId: init.entityId,
+        method,
+        path,
+        body: init.body,
+        idempotencyKey,
+        baseVersion: init.baseVersion,
+      });
+      throw new OfflineQueuedError(queued.id);
+    }
     const appCheckValue = await appCheckToken();
     const headers: Record<string, string> = {
       authorization: `Bearer ${tokenResult.token}`,
@@ -75,7 +114,8 @@ export async function apiRequest<T>(
     };
     if (appCheckValue) headers['x-firebase-appcheck'] = appCheckValue;
     if (init.body !== undefined) headers['content-type'] = 'application/json';
-    if (method !== 'GET') headers['idempotency-key'] = init.idempotencyKey ?? newIdempotencyKey();
+    if (method !== 'GET') headers['idempotency-key'] = idempotencyKey;
+    if (init.baseVersion !== undefined) headers['if-match'] = `"record-version-${init.baseVersion}"`;
 
     const response = await fetch(`${baseUrl.replace(/\/$/u, '')}${path}`, {
       method,
@@ -85,17 +125,22 @@ export async function apiRequest<T>(
     const payload = await response.json() as ApiEnvelope<T> & ApiErrorEnvelope;
     if (!response.ok) {
       const error = new Error(payload.error?.message ?? 'The API request failed.');
-      Object.assign(error, payload.error);
+      Object.assign(error, payload.error, { status: payload.error?.status ?? response.status });
       throw error;
     }
-    if (method !== 'GET') {
-      emitShellOperation({ id: operationId, kind: 'sync', status: 'succeeded', title: 'Changes synchronised', source: path, persistence: 'cloud', clearDirty: true });
-    }
     return payload.data;
-  } catch (error) {
-    if (method !== 'GET') {
-      emitShellOperation({ id: operationId, kind: 'sync', status: 'failed', title: 'Synchronisation failed', message: error instanceof Error ? error.message : 'The cloud request failed.', source: path, persistence: 'cloud' });
-    }
-    throw error;
-  }
+  };
+
+  if (method === 'GET') return execute();
+  return runShellOperation({
+    kind: 'sync',
+    title: 'Synchronising changes',
+    source: path,
+    persistence: 'cloud',
+    dirtyScopeId: init.dirtyScopeId,
+    entityType: init.entityType,
+    entityId: init.entityId,
+    action: init.action ?? method.toLowerCase(),
+    announceSuccess: init.announceSuccess,
+  }, execute);
 }
