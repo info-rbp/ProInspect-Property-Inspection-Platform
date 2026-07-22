@@ -1,4 +1,5 @@
 import { openDB } from 'idb';
+import { createShellOperationId, emitShellOperation } from '../shellEvents';
 
 const LOCAL_PLATFORM_DB = 'proinspect-platform-db';
 
@@ -36,9 +37,17 @@ export const initPlatformDB = async () => {
 };
 
 export const localPut = async <T extends { id: string }>(storeName: PlatformStoreName, record: T): Promise<T> => {
-  const database = await initPlatformDB();
-  await database.put(storeName, record);
-  return record;
+  const operationId = createShellOperationId(`local-${storeName}`);
+  emitShellOperation({ id: operationId, kind: 'save', status: 'started', title: `Saving ${storeName}`, persistence: 'local', source: storeName });
+  try {
+    const database = await initPlatformDB();
+    await database.put(storeName, record);
+    emitShellOperation({ id: operationId, kind: 'save', status: 'succeeded', title: 'Saved on this device', persistence: 'local', source: storeName, clearDirty: true });
+    return record;
+  } catch (error) {
+    emitShellOperation({ id: operationId, kind: 'save', status: 'failed', title: 'Local save failed', message: error instanceof Error ? error.message : 'The record could not be saved on this device.', persistence: 'local', source: storeName });
+    throw error;
+  }
 };
 
 export const localGet = async <T>(storeName: PlatformStoreName, id: string): Promise<T | undefined> => {
