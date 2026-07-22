@@ -1,6 +1,7 @@
 import { getApp } from 'firebase/app';
 import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from 'firebase/app-check';
 import { getAuth } from 'firebase/auth';
+import { createShellOperationId, emitShellOperation } from './shellEvents';
 
 interface ApiEnvelope<T> {
   data: T;
@@ -46,40 +47,55 @@ export async function apiRequest<T>(
   path: string,
   init: { method?: 'GET' | 'POST' | 'PATCH' | 'PUT'; body?: unknown; idempotencyKey?: string } = {},
 ): Promise<T> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (!baseUrl) throw new Error('VITE_API_BASE_URL is required for cloud operations.');
-  let user;
-  try {
-    user = getAuth().currentUser;
-  } catch {
-    user = null;
-  }
-  if (!user) throw new Error('Sign in before accessing cloud records.');
-  const tokenResult = await user.getIdTokenResult();
-  const claimAgency = typeof tokenResult.claims.agencyId === 'string' ? tokenResult.claims.agencyId : undefined;
-  const resolvedAgencyId = agencyId || user.tenantId || claimAgency;
-  if (!resolvedAgencyId) throw new Error('The signed-in identity is not linked to an agency.');
-  const appCheckValue = await appCheckToken();
   const method = init.method ?? 'GET';
-  const headers: Record<string, string> = {
-    authorization: `Bearer ${tokenResult.token}`,
-    'x-agency-id': resolvedAgencyId,
-    accept: 'application/json',
-  };
-  if (appCheckValue) headers['x-firebase-appcheck'] = appCheckValue;
-  if (init.body !== undefined) headers['content-type'] = 'application/json';
-  if (method !== 'GET') headers['idempotency-key'] = init.idempotencyKey ?? newIdempotencyKey();
+  const operationId = createShellOperationId(`api-${method.toLowerCase()}`);
+  if (method !== 'GET') {
+    emitShellOperation({ id: operationId, kind: 'sync', status: 'started', title: 'Synchronising changes', source: path, persistence: 'cloud' });
+  }
 
-  const response = await fetch(`${baseUrl.replace(/\/$/u, '')}${path}`, {
-    method,
-    headers,
-    ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
-  });
-  const payload = await response.json() as ApiEnvelope<T> & ApiErrorEnvelope;
-  if (!response.ok) {
-    const error = new Error(payload.error?.message ?? 'The API request failed.');
-    Object.assign(error, payload.error);
+  try {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+    if (!baseUrl) throw new Error('VITE_API_BASE_URL is required for cloud operations.');
+    let user;
+    try {
+      user = getAuth().currentUser;
+    } catch {
+      user = null;
+    }
+    if (!user) throw new Error('Sign in before accessing cloud records.');
+    const tokenResult = await user.getIdTokenResult();
+    const claimAgency = typeof tokenResult.claims.agencyId === 'string' ? tokenResult.claims.agencyId : undefined;
+    const resolvedAgencyId = agencyId || user.tenantId || claimAgency;
+    if (!resolvedAgencyId) throw new Error('The signed-in identity is not linked to an agency.');
+    const appCheckValue = await appCheckToken();
+    const headers: Record<string, string> = {
+      authorization: `Bearer ${tokenResult.token}`,
+      'x-agency-id': resolvedAgencyId,
+      accept: 'application/json',
+    };
+    if (appCheckValue) headers['x-firebase-appcheck'] = appCheckValue;
+    if (init.body !== undefined) headers['content-type'] = 'application/json';
+    if (method !== 'GET') headers['idempotency-key'] = init.idempotencyKey ?? newIdempotencyKey();
+
+    const response = await fetch(`${baseUrl.replace(/\/$/u, '')}${path}`, {
+      method,
+      headers,
+      ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+    });
+    const payload = await response.json() as ApiEnvelope<T> & ApiErrorEnvelope;
+    if (!response.ok) {
+      const error = new Error(payload.error?.message ?? 'The API request failed.');
+      Object.assign(error, payload.error);
+      throw error;
+    }
+    if (method !== 'GET') {
+      emitShellOperation({ id: operationId, kind: 'sync', status: 'succeeded', title: 'Changes synchronised', source: path, persistence: 'cloud', clearDirty: true });
+    }
+    return payload.data;
+  } catch (error) {
+    if (method !== 'GET') {
+      emitShellOperation({ id: operationId, kind: 'sync', status: 'failed', title: 'Synchronisation failed', message: error instanceof Error ? error.message : 'The cloud request failed.', source: path, persistence: 'cloud' });
+    }
     throw error;
   }
-  return payload.data;
 }
