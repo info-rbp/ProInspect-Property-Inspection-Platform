@@ -108,16 +108,17 @@ jobs:
       - run: npx playwright install --with-deps chromium firefox webkit
       - name: Full Chromium browser suite
         id: chromium
-        run: npm run test:e2e -- --project=chromium
+        run: npm run test:e2e -- --project=chromium 2>&1 | tee chromium.log
       - name: Upload Chromium diagnostics
         if: failure() && steps.chromium.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: chromium-playwright-diagnostics
           path: |
+            chromium.log
             playwright-report
             test-results
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 2
       - name: Targeted cross-browser shell and accessibility suite
         run: npm run test:e2e -- --project=firefox --project=webkit --project=mobile-chrome --project=mobile-safari
