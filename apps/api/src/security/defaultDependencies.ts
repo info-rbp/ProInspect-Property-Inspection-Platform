@@ -5,6 +5,7 @@ import { FirestoreOperationalRepository } from '../backend/firestoreRepository.j
 import { FirestoreReportAggregateStore } from '../backend/reportAggregateStore.js';
 import { FirestoreIdempotencyStore } from '../backend/idempotency.js';
 import { FirebaseUploadSessionIssuer, FirestoreTaskOutbox } from '../backend/integrations.js';
+import { FirestoreTemplateRepository } from '../repositories/templateRepository.js';
 import type { ApiDependencies } from '../backend/types.js';
 
 export function createSecurityDependencies(env: NodeJS.ProcessEnv = process.env): ApiDependencies {
@@ -18,5 +19,6 @@ export function createSecurityDependencies(env: NodeJS.ProcessEnv = process.env)
     idempotency: new FirestoreIdempotencyStore(),
     tasks: new FirestoreTaskOutbox(),
     uploads: new FirebaseUploadSessionIssuer(env.UPLOAD_BUCKET),
+    templateRepository: (agencyId, actorId) => new FirestoreTemplateRepository(agencyId, actorId),
   };
 }
