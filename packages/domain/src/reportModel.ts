@@ -3,10 +3,12 @@ import type { InspectionType, ReportLifecycleStatus } from './platform.js';
 export const COMPONENT_VISIBILITY_STATES = ['visible', 'partially_visible', 'not_visible', 'not_applicable'] as const;
 export const COMPONENT_TESTING_METHODS = ['manual_test', 'visual_evidence', 'advised', 'not_tested'] as const;
 export const REPORT_QUALITY_STATUSES = ['not_run', 'not_ready', 'ready', 'waived'] as const;
+export const REPORT_EVIDENCE_PURPOSES = ['overview', 'context', 'defect', 'testing', 'meter', 'key', 'comparison', 'completion'] as const;
 
 export type ComponentVisibility = (typeof COMPONENT_VISIBILITY_STATES)[number];
 export type ComponentTestingMethod = (typeof COMPONENT_TESTING_METHODS)[number];
 export type ReportQualityStatus = (typeof REPORT_QUALITY_STATUSES)[number];
+export type ReportEvidencePurpose = (typeof REPORT_EVIDENCE_PURPOSES)[number];
 
 export const COMPONENT_CONDITION_CATEGORIES = [
   'not_applicable',
@@ -62,6 +64,8 @@ export interface ReportPhotoReference {
   thumbnailObjectPath?: string;
   caption?: string;
   sequence?: number;
+  purpose?: ReportEvidencePurpose;
+  contentType?: string;
 }
 
 export interface ReportAssetReference {
@@ -88,7 +92,7 @@ export interface EvidenceLink {
   reportVersionId?: string;
   areaId?: string;
   componentId?: string;
-  purpose: 'overview' | 'context' | 'defect' | 'testing' | 'meter' | 'key' | 'comparison' | 'completion';
+  purpose: ReportEvidencePurpose;
   sequence: number;
   caption?: string;
   createdBy: string;
