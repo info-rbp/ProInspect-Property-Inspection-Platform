@@ -11,6 +11,13 @@ function templateRef(agencyId: string, templateId: string, version: number) {
   return getFirestore(adminApp()).doc(`agencies/${agencyId}/templates/${templateId}/versions/${version}`);
 }
 
+function validLifecycle(existing: InspectionTypeTemplate | undefined, next: InspectionTypeTemplate): boolean {
+  if (!existing) return next.status === 'draft';
+  if (existing.status === 'draft') return next.status === 'draft' || next.status === 'published';
+  if (existing.status === 'published') return next.status === 'published' || next.status === 'retired';
+  return next.status === 'retired';
+}
+
 export class FirestoreTemplateRepository implements TemplateRepository {
   constructor(private readonly agencyId: string, private readonly actorId = 'system') {}
 
@@ -25,8 +32,16 @@ export class FirestoreTemplateRepository implements TemplateRepository {
     await database.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       const existing = snapshot.exists ? snapshot.data() as InspectionTypeTemplate : undefined;
-      if (existing && existing.status !== 'draft') throw Object.assign(new Error('Published and retired template versions are immutable.'), { code: 'TEMPLATE_IMMUTABLE', status: 409 });
-      if (existing && template.status !== 'draft' && existing.status !== 'draft') throw Object.assign(new Error('Template lifecycle conflict.'), { code: 'TEMPLATE_STATE_CONFLICT', status: 409 });
+      if (!validLifecycle(existing, template)) {
+        throw Object.assign(new Error('Template lifecycle transition is not permitted.'), {
+          code: existing && existing.status !== 'draft' ? 'TEMPLATE_IMMUTABLE' : 'TEMPLATE_STATE_CONFLICT',
+          status: 409,
+          details: { from: existing?.status ?? null, to: template.status },
+        });
+      }
+      if (existing?.status === 'published' && template.status === 'published' && JSON.stringify(existing) !== JSON.stringify(template)) {
+        throw Object.assign(new Error('Published template content is immutable.'), { code: 'TEMPLATE_IMMUTABLE', status: 409 });
+      }
       const timestamp = new Date().toISOString();
       transaction.set(reference, structuredClone(template));
       transaction.set(database.doc(`agencies/${this.agencyId}/templates/${template.id}`), {
@@ -44,6 +59,14 @@ export class FirestoreTemplateRepository implements TemplateRepository {
         transaction.set(database.doc(`agencies/${this.agencyId}/outboxEvents/${eventId}`), {
           id: eventId, agencyId: this.agencyId, eventType: 'template.published', aggregateType: 'template',
           aggregateId: template.id, aggregateVersion: template.version, payload: { templateId: template.id, version: template.version, contentHash: template.contentHash ?? null },
+          correlationId: eventId, status: 'pending', attempt: 0, availableAt: timestamp, createdAt: timestamp,
+        });
+      }
+      if (template.status === 'retired' && existing?.status === 'published') {
+        const eventId = `${template.id}-${template.version}-retired`;
+        transaction.set(database.doc(`agencies/${this.agencyId}/outboxEvents/${eventId}`), {
+          id: eventId, agencyId: this.agencyId, eventType: 'template.retired', aggregateType: 'template',
+          aggregateId: template.id, aggregateVersion: template.version, payload: { templateId: template.id, version: template.version },
           correlationId: eventId, status: 'pending', attempt: 0, availableAt: timestamp, createdAt: timestamp,
         });
       }
