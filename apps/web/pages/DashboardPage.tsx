@@ -64,7 +64,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-950">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-brand-600">Dashboard</h1>
         <p className="text-sm text-gray-600">Operational overview for ProInspect inspections.</p>
       </div>
 
@@ -76,7 +76,7 @@ const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                  <p className="mt-2 text-3xl font-bold text-gray-950">{isLoading ? '-' : card.value}</p>
+                  <p className="mt-2 text-3xl font-bold text-brand-600">{isLoading ? '-' : card.value}</p>
                 </div>
                 <div className="grid h-11 w-11 place-items-center rounded-lg bg-gray-100 text-gray-700">
                   <Icon size={22} />

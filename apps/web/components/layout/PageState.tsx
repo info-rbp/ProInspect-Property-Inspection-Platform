@@ -23,7 +23,7 @@ const PageState = <T,>({ state, children, resourceName, emptyTitle, emptyMessage
   if (state.status === 'loading') return <LoadingState title={`Loading ${resourceName}`} message={`Retrieving the latest ${resourceName}.`} />;
   if (state.status === 'empty') return <EmptyState title={emptyTitle} message={emptyMessage} action={emptyAction} />;
   if (state.status === 'permission-denied') return <PermissionDeniedState message={`Your role does not allow access to these ${resourceName}.`} />;
-  if (state.status === 'error') return <ErrorState title={`${resourceName} unavailable`} message={state.error.message} action={state.retrySafe && onRetry ? <button type="button" onClick={onRetry} className="rounded bg-gray-950 px-3 py-2 text-sm font-semibold text-white">Retry</button> : undefined} />;
+  if (state.status === 'error') return <ErrorState title={`${resourceName} unavailable`} message={state.error.message} action={state.retrySafe && onRetry ? <button type="button" onClick={onRetry} className="rounded bg-brand-600 px-3 py-2 text-sm font-semibold text-white">Retry</button> : undefined} />;
   return <>{isRefreshing ? <div role="status" className="mb-2 text-xs text-gray-500">Refreshing {resourceName}…</div> : null}{children(state.data)}</>;
 };
 

@@ -8,7 +8,7 @@ const UsersPage: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-950">Users</h1>
+          <h1 className="text-2xl font-bold text-brand-600">Users</h1>
           <p className="text-sm text-gray-600">Operator profiles and role labels.</p>
         </div>
         <button disabled className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-400">
@@ -29,7 +29,7 @@ const UsersPage: React.FC = () => {
           <tbody>
             {userProfile && (
               <tr>
-                <td className="p-3 font-medium text-gray-950">{userProfile.displayName || 'Current operator'}</td>
+                <td className="p-3 font-medium text-brand-600">{userProfile.displayName || 'Current operator'}</td>
                 <td className="p-3 text-gray-600">{userProfile.email}</td>
                 <td className="p-3 capitalize text-gray-600">{userProfile.role.replaceAll('_', ' ')}</td>
                 <td className="p-3 capitalize text-gray-600">{userProfile.status}</td>

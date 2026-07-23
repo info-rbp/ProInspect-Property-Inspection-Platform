@@ -36,13 +36,13 @@ const SyncQueuePanel: React.FC = () => {
       {open ? (
         <div className="rounded-xl border border-amber-200 bg-white p-4 shadow-2xl">
           <div className="flex items-start justify-between gap-4">
-            <div><h2 className="font-semibold text-gray-950">Unsynchronised changes</h2><p className="text-xs text-gray-600">Stored for this signed-in user and agency only.</p></div>
+            <div><h2 className="font-semibold text-brand-600">Unsynchronised changes</h2><p className="text-xs text-gray-600">Stored for this signed-in user and agency only.</p></div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close sync queue"><X size={18} /></button>
           </div>
           <ul className="mt-3 max-h-52 space-y-2 overflow-auto text-sm">
             {items.map((item) => <li key={item.id} className="rounded bg-gray-50 p-2"><strong>{item.entityType}</strong>{item.entityId ? ` ${item.entityId}` : ''}<div className="text-xs text-gray-600">{item.status}{item.lastError ? ` — ${item.lastError}` : ''}</div></li>)}
           </ul>
-          <button type="button" disabled={syncing || !navigator.onLine} onClick={syncNow} className="mt-3 inline-flex items-center gap-2 rounded bg-gray-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><RefreshCw size={15} className={syncing ? 'animate-spin' : ''} /> Synchronise now</button>
+          <button type="button" disabled={syncing || !navigator.onLine} onClick={syncNow} className="mt-3 inline-flex items-center gap-2 rounded bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><RefreshCw size={15} className={syncing ? 'animate-spin' : ''} /> Synchronise now</button>
         </div>
       ) : (
         <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-950 shadow-lg"><CloudOff size={16} /> {items.length} unsynchronised</button>

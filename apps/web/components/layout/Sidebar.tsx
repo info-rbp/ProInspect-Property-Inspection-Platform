@@ -33,13 +33,13 @@ const Sidebar: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
   return (
     <aside className="relative flex h-full min-h-screen flex-col border-r border-gray-200 bg-white lg:sticky lg:top-0 lg:h-screen">
       <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-5">
-        <div className="grid h-9 w-9 place-items-center rounded bg-gray-950 text-sm font-black text-white">PI</div>
+        <img src="/branding/proinspect-icon.png" alt="" aria-hidden="true" className="h-9 w-9 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-bold text-gray-950">ProInspect</div>
-          <div className="truncate text-xs text-gray-500">Inspection platform</div>
+          <div className="text-sm font-bold text-brand-600">ProInspect</div>
+          <div className="truncate text-xs text-gray-500">Inspect. Report. Protect.</div>
         </div>
         {mobile ? (
-          <button type="button" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-950" onClick={() => setMobileNavigationOpen(false)} aria-label="Close navigation">
+          <button type="button" className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-600" onClick={() => setMobileNavigationOpen(false)} aria-label="Close navigation">
             <X size={20} />
           </button>
         ) : null}
@@ -52,8 +52,8 @@ const Sidebar: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
               key={item.to}
               to={item.to}
               className={({ isActive }) => [
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2',
-                isActive ? 'bg-gray-950 text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-950',
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2',
+                isActive ? 'bg-brand-600 text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-brand-600',
               ].join(' ')}
             >
               <Icon size={18} aria-hidden="true" />
@@ -63,7 +63,7 @@ const Sidebar: React.FC<{ mobile?: boolean }> = ({ mobile = false }) => {
         })}
       </nav>
       <section className="mx-3 mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700" aria-label="System status">
-        <div className="font-bold text-gray-950">System status</div>
+        <div className="font-bold text-brand-600">System status</div>
         <div className="mt-1">Release: {release}</div>
         <div className="mt-1">Agency: {userProfile?.agencyId || 'Not assigned'}</div>
       </section>

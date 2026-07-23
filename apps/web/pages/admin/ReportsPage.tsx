@@ -69,10 +69,10 @@ const ReportsPage: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-950">Reports</h1>
+          <h1 className="text-2xl font-bold text-brand-600">Reports</h1>
           <p className="text-sm text-gray-600">Report indexes linked to full inspection report payloads.</p>
         </div>
-        <button type="button" onClick={() => setIsCreating(true)} className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+        <button type="button" onClick={() => setIsCreating(true)} className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
           <Plus size={16} /> Create report
         </button>
       </div>
@@ -90,7 +90,7 @@ const ReportsPage: React.FC = () => {
           <input placeholder="Tenant names" value={form.tenantName} onChange={(event) => setForm((prev) => ({ ...prev, tenantName: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
           <input placeholder="Client / landlord" value={form.clientName} onChange={(event) => setForm((prev) => ({ ...prev, clientName: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
           <div className="flex gap-2">
-            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create</button>
+            <button type="submit" className="rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700">Create</button>
             <button type="button" onClick={() => { dirtyForm.markClean(); setIsCreating(false); }} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
           </div>
         </form>
@@ -113,14 +113,14 @@ const ReportsPage: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {reports.map((report) => (
                 <tr key={report.id} className="hover:bg-gray-50">
-                  <td className="p-3 font-medium text-gray-950"><Link to={`/app/admin/reports/${report.reportId}`}>{report.propertyAddress || 'Untitled property'}</Link></td>
+                  <td className="p-3 font-medium text-brand-600"><Link to={`/app/admin/reports/${report.reportId}`}>{report.propertyAddress || 'Untitled property'}</Link></td>
                   <td className="p-3 text-gray-600">{report.reportType}</td>
                   <td className="p-3"><span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700">{report.lifecycleStatus.replaceAll('_', ' ')}</span></td>
                   <td className="p-3 text-gray-600">{report.inspectionDate || '-'}</td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      <Link className="text-blue-600 hover:underline" to={`/app/admin/reports/${report.reportId}/edit`}>Edit</Link>
-                      <Link className="text-blue-600 hover:underline" to={`/app/admin/reports/${report.reportId}/preview`}>Preview</Link>
+                      <Link className="text-accent-600 hover:underline" to={`/app/admin/reports/${report.reportId}/edit`}>Edit</Link>
+                      <Link className="text-accent-600 hover:underline" to={`/app/admin/reports/${report.reportId}/preview`}>Preview</Link>
                     </div>
                   </td>
                 </tr>

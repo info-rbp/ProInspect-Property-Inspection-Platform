@@ -8,8 +8,8 @@ const getEnvironment = (): { label: string; className: string } => {
   const configured = String(import.meta.env.VITE_APP_ENVIRONMENT || '').toLowerCase();
   if (configured === 'production') return { label: 'Production', className: 'bg-red-100 text-red-800' };
   if (configured === 'staging') return { label: 'Staging', className: 'bg-amber-100 text-amber-800' };
-  if (configured === 'development') return { label: 'Development cloud', className: 'bg-blue-100 text-blue-800' };
-  return { label: 'Local device mode', className: 'bg-gray-200 text-gray-800' };
+  if (configured === 'development') return { label: 'Development cloud', className: 'bg-accent-100 text-accent-800' };
+  return { label: 'Local device mode', className: 'bg-gray-200 text-ink-800' };
 };
 
 const TopBar: React.FC = () => {
@@ -43,9 +43,9 @@ const TopBar: React.FC = () => {
 
   const role = (userProfile?.role || 'inspector').replaceAll('_', ' ');
   const syncPresentation = {
-    local: { label: hasPendingChanges ? 'Local changes pending' : 'Saved on this device', className: 'bg-gray-200 text-gray-800', icon: HardDrive },
+    local: { label: hasPendingChanges ? 'Local changes pending' : 'Saved on this device', className: 'bg-gray-200 text-ink-800', icon: HardDrive },
     synchronised: { label: 'Cloud synchronised', className: 'bg-emerald-100 text-emerald-800', icon: Cloud },
-    syncing: { label: 'Synchronising', className: 'bg-blue-100 text-blue-800', icon: Loader2 },
+    syncing: { label: 'Synchronising', className: 'bg-accent-100 text-accent-800', icon: Loader2 },
     pending: { label: 'Changes pending', className: 'bg-amber-100 text-amber-800', icon: HardDrive },
     failed: { label: 'Synchronisation failed', className: 'bg-red-100 text-red-800', icon: AlertTriangle },
     offline: { label: 'Offline', className: 'bg-red-100 text-red-800', icon: CloudOff },
@@ -58,11 +58,11 @@ const TopBar: React.FC = () => {
   return (
     <header className="sticky top-0 z-30 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur lg:px-6">
       <div className="flex min-w-0 items-center gap-3">
-        <button className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-950 lg:hidden" type="button" aria-label="Open navigation" onClick={() => setMobileNavigationOpen(true)}>
+        <button className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-600 lg:hidden" type="button" aria-label="Open navigation" onClick={() => setMobileNavigationOpen(true)}>
           <Menu size={20} />
         </button>
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-gray-950">{agencyName}</div>
+          <div className="truncate text-sm font-semibold text-brand-600">{agencyName}</div>
           <div className="truncate text-xs capitalize text-gray-500">Active role: {role}</div>
         </div>
       </div>
@@ -74,10 +74,10 @@ const TopBar: React.FC = () => {
           {syncPresentation.label}
         </span>
         <div className="hidden text-right md:block">
-          <div className="text-sm font-semibold text-gray-950">{userProfile?.displayName || userProfile?.email || 'Operator'}</div>
+          <div className="text-sm font-semibold text-brand-600">{userProfile?.displayName || userProfile?.email || 'Operator'}</div>
           <div className="text-xs text-gray-500">{userProfile?.email}</div>
         </div>
-        <button type="button" onClick={() => logout()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-950">
+        <button type="button" onClick={() => logout()} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-600">
           <LogOut size={16} aria-hidden="true" />
           <span className="hidden sm:inline">Logout</span>
         </button>

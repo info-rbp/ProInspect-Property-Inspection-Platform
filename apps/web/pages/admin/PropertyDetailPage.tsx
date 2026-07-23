@@ -452,9 +452,9 @@ const PropertyDetailPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center space-y-3">
         <AlertCircle size={40} className="text-amber-500 animate-pulse" />
-        <h2 className="text-lg font-semibold text-gray-800">Property details loading...</h2>
+        <h2 className="text-lg font-semibold text-ink-800">Property details loading...</h2>
         <p className="text-sm text-gray-500 max-w-sm">Please wait while we retrieve the property specifications and inspection logs from database storage.</p>
-        <Link to="/app/admin/properties" className="mt-4 rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-850">
+        <Link to="/app/admin/properties" className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
           Back to properties
         </Link>
       </div>
@@ -513,7 +513,7 @@ const PropertyDetailPage: React.FC = () => {
     <div className="space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-xl flex items-center gap-2 border border-gray-800 animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-5 right-5 z-50 rounded-xl bg-ink-900 px-4 py-3 text-sm font-semibold text-white shadow-xl flex items-center gap-2 border border-ink-800 animate-in fade-in slide-in-from-bottom-5 duration-200">
           <CheckCircle className="text-green-400" size={18} />
           {toastMessage}
         </div>
@@ -522,9 +522,9 @@ const PropertyDetailPage: React.FC = () => {
       {/* TOP HEADER & BREADCRUMBS */}
       <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
-          <Link to="/app/admin/properties" className="hover:text-blue-600 font-medium">Properties</Link>
+          <Link to="/app/admin/properties" className="hover:text-accent-600 font-medium">Properties</Link>
           <ChevronRight size={14} className="text-gray-400" />
-          <span className="font-semibold text-gray-950">{property.address}</span>
+          <span className="font-semibold text-brand-600">{property.address}</span>
         </div>
         <div className="flex gap-2">
           <button
@@ -540,7 +540,7 @@ const PropertyDetailPage: React.FC = () => {
               setNewInspectionForm(p => ({ ...p, reportType: 'Routine Inspection' }));
               setShowInspectionModal(true);
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+            className="inline-flex items-center gap-2 rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700 transition shadow-sm"
           >
             <Plus size={14} /> New Inspection
           </button>
@@ -563,19 +563,19 @@ const PropertyDetailPage: React.FC = () => {
                   onClick={() => setActiveTab(tab.name)}
                   className={`w-full flex items-center justify-between p-3.5 text-left text-xs font-semibold transition-all ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50/70 hover:text-gray-950'
+                      ? 'bg-accent-50 text-accent-700 border-l-4 border-accent-600'
+                      : 'text-gray-600 hover:bg-gray-50/70 hover:text-brand-600'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={isActive ? 'text-blue-600' : 'text-gray-400'}>
+                    <span className={isActive ? 'text-accent-600' : 'text-gray-400'}>
                       {tab.icon}
                     </span>
                     <span>{tab.name}</span>
                   </div>
                   {tab.badge !== null && (
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                      isActive ? 'bg-accent-600 text-white' : 'bg-gray-100 text-gray-600'
                     }`}>
                       {tab.badge}
                     </span>
@@ -596,7 +596,7 @@ const PropertyDetailPage: React.FC = () => {
               {/* Detailed Specs Block */}
               <div className="md:col-span-7 rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <h2 className="text-md font-bold text-gray-900">Property Details</h2>
+                  <h2 className="text-md font-bold text-ink-900">Property Details</h2>
                   <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
                     <Clipboard size={14} /> CODE: {property.propertyCode || 'N/A'}
                   </div>
@@ -604,17 +604,17 @@ const PropertyDetailPage: React.FC = () => {
 
                 <div className="grid grid-cols-12 gap-y-4 gap-x-6 text-sm">
                   <div className="col-span-4 font-semibold text-gray-500">Property ID:</div>
-                  <div className="col-span-8 text-gray-950 font-mono font-medium">{property.propertyCode || 'LAUR13'}</div>
+                  <div className="col-span-8 text-brand-600 font-mono font-medium">{property.propertyCode || 'LAUR13'}</div>
 
                   <div className="col-span-4 font-semibold text-gray-500">Property Type:</div>
-                  <div className="col-span-8 text-gray-950 capitalize">{property.propertyType || 'House'}</div>
+                  <div className="col-span-8 text-brand-600 capitalize">{property.propertyType || 'House'}</div>
 
                   <div className="col-span-4 font-semibold text-gray-500">Property Manager:</div>
-                  <div className="col-span-8 text-gray-950">{property.propertyManager || 'Admin Team'}</div>
+                  <div className="col-span-8 text-brand-600">{property.propertyManager || 'Admin Team'}</div>
 
                   <div className="col-span-4 font-semibold text-gray-500">Address:</div>
                   <div className="col-span-8 space-y-1">
-                    <div className="font-bold text-gray-900">{property.address}</div>
+                    <div className="font-bold text-ink-900">{property.address}</div>
                     <div className="text-gray-600">{[property.suburb, property.state, property.postcode].filter(Boolean).join(' ')}</div>
                     {/* Bed/Bath/Car icons */}
                     <div className="flex items-center gap-4 pt-1.5 text-xs font-bold text-gray-600">
@@ -631,7 +631,7 @@ const PropertyDetailPage: React.FC = () => {
                   </div>
 
                   <div className="col-span-4 font-semibold text-gray-500">Building Name:</div>
-                  <div className="col-span-8 text-gray-950 font-medium">{property.buildingName || '-'}</div>
+                  <div className="col-span-8 text-brand-600 font-medium">{property.buildingName || '-'}</div>
 
                   <div className="col-span-4 font-semibold text-gray-500">First added by:</div>
                   <div className="col-span-8 text-gray-600">
@@ -639,7 +639,7 @@ const PropertyDetailPage: React.FC = () => {
                   </div>
 
                   <div className="col-span-4 font-semibold text-gray-500">Inspection Interval:</div>
-                  <div className="col-span-8 text-gray-950 font-semibold">{property.inspectionInterval || '3 Months'}</div>
+                  <div className="col-span-8 text-brand-600 font-semibold">{property.inspectionInterval || '3 Months'}</div>
 
                   <div className="col-span-4 font-semibold text-gray-500">Notes:</div>
                   <div className="col-span-8 text-gray-700 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs whitespace-pre-wrap leading-relaxed">
@@ -654,14 +654,14 @@ const PropertyDetailPage: React.FC = () => {
                 {agency && (
                   <div className="border-t border-gray-100 pt-4 mt-2">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Linked Real Estate Agency</h4>
-                    <div className="rounded-lg bg-blue-50/50 border border-blue-100 p-3 flex gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <div className="rounded-lg bg-accent-50/50 border border-accent-100 p-3 flex gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-accent-600 flex items-center justify-center text-white shrink-0 shadow-sm">
                         <Building2 size={20} />
                       </div>
                       <div className="space-y-0.5 text-xs">
-                        <div className="font-bold text-blue-950">{agency.name}</div>
-                        {agency.tradingName && <div className="text-blue-800">Trading as: {agency.tradingName}</div>}
-                        <div className="flex gap-3 text-blue-600 pt-1 font-medium">
+                        <div className="font-bold text-accent-950">{agency.name}</div>
+                        {agency.tradingName && <div className="text-accent-800">Trading as: {agency.tradingName}</div>}
+                        <div className="flex gap-3 text-accent-600 pt-1 font-medium">
                           {agency.contactEmail && <span>Email: {agency.contactEmail}</span>}
                           {agency.contactPhone && <span>Phone: {agency.contactPhone}</span>}
                         </div>
@@ -714,7 +714,7 @@ const PropertyDetailPage: React.FC = () => {
                             <div className="absolute bottom-[-4px] left-[6px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-red-600" />
                           </div>
                           {/* Label */}
-                          <div className="mt-1.5 bg-white/95 border border-gray-200 px-1.5 py-0.5 rounded text-[8px] font-bold text-gray-950 whitespace-nowrap shadow-sm">
+                          <div className="mt-1.5 bg-white/95 border border-gray-200 px-1.5 py-0.5 rounded text-[8px] font-bold text-brand-600 whitespace-nowrap shadow-sm">
                             {property.address}
                           </div>
                         </div>
@@ -748,16 +748,16 @@ const PropertyDetailPage: React.FC = () => {
                       <span className="font-semibold text-gray-500 flex items-center gap-1.5">
                         <Clock size={14} className="text-amber-500" /> Inspection Due:
                       </span>
-                      <span className="font-bold text-gray-950">
+                      <span className="font-bold text-brand-600">
                         {formatPresentationDate(property.inspectionDue, 'Sat, 25/07/2026')}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between border-b border-gray-50 pb-2.5">
                       <span className="font-semibold text-gray-500 flex items-center gap-1.5">
-                        <Calendar size={14} className="text-blue-500" /> Next Inspection:
+                        <Calendar size={14} className="text-accent-500" /> Next Inspection:
                       </span>
-                      <span className="font-bold text-gray-950">
+                      <span className="font-bold text-brand-600">
                         {formatPresentationDateTime(property.nextInspection, 'Wed, 22/07/2026 09:00 AM')}
                       </span>
                     </div>
@@ -766,7 +766,7 @@ const PropertyDetailPage: React.FC = () => {
                       <span className="font-semibold text-gray-500 flex items-center gap-1.5">
                         <CheckCircle size={14} className="text-green-500" /> Last Inspection:
                       </span>
-                      <span className="font-bold text-gray-950">
+                      <span className="font-bold text-brand-600">
                         {formatPresentationDateTime(property.lastInspection, 'Fri, 24/04/2026 12:58 PM')}
                       </span>
                     </div>
@@ -812,13 +812,13 @@ const PropertyDetailPage: React.FC = () => {
             <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden space-y-4 p-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <div>
-                  <h2 className="text-md font-bold text-gray-900">Inspection Schedule</h2>
+                  <h2 className="text-md font-bold text-ink-900">Inspection Schedule</h2>
                   <p className="text-xs text-gray-500">Track current and historical inspection records for this property.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowInspectionModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-accent-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-accent-700 transition"
                 >
                   <Plus size={14} /> Schedule Inspection
                 </button>
@@ -845,10 +845,10 @@ const PropertyDetailPage: React.FC = () => {
                     <tbody className="divide-y divide-gray-100">
                       {inspections.map((job) => (
                         <tr key={job.id} className="hover:bg-gray-50/50">
-                          <td className="p-3 font-semibold text-gray-900">
+                          <td className="p-3 font-semibold text-ink-900">
                             <div className="flex items-center gap-2">
                               <span className={`w-2 h-3.5 rounded ${
-                                job.reportType.includes('Routine') ? 'bg-blue-500' : job.reportType.includes('Entry') ? 'bg-green-500' : 'bg-amber-500'
+                                job.reportType.includes('Routine') ? 'bg-accent-500' : job.reportType.includes('Entry') ? 'bg-green-500' : 'bg-amber-500'
                               }`} />
                               <span>{job.reportType}</span>
                             </div>
@@ -863,14 +863,14 @@ const PropertyDetailPage: React.FC = () => {
                                 ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                 : job.status === 'archived' || job.status === 'finalised'
                                 ? 'bg-gray-100 text-gray-600'
-                                : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-accent-50 text-accent-700 border border-accent-200'
                             }`}>
                               {job.status === 'booked' ? (
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                               ) : job.status === 'archived' || job.status === 'finalised' ? (
                                 <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
                               ) : (
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />
                               )}
                               <span className="capitalize">{job.status.replaceAll('_', ' ')}</span>
                             </span>
@@ -881,7 +881,7 @@ const PropertyDetailPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateJobStatus(job.id, 'assigned')}
-                                  className="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 transition"
+                                  className="rounded border border-accent-200 bg-accent-50 px-2 py-1 text-[10px] font-bold text-accent-700 hover:bg-accent-100 transition"
                                 >
                                   Confirm
                                 </button>
@@ -920,7 +920,7 @@ const PropertyDetailPage: React.FC = () => {
                     type="button"
                     onClick={handleSaveLayoutAsTemplate}
                     disabled={isUpdating}
-                    className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition"
+                    className="inline-flex items-center gap-1 rounded bg-accent-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-700 transition"
                   >
                     <Save size={12} /> Save as Template
                   </button>
@@ -959,11 +959,11 @@ const PropertyDetailPage: React.FC = () => {
                           key={area}
                           onClick={() => setSelectedArea(area)}
                           className={`flex items-center justify-between p-3.5 text-xs font-semibold cursor-pointer transition ${
-                            isActive ? 'bg-white border-r-4 border-blue-600 text-blue-700' : 'text-gray-700 hover:bg-gray-100/50'
+                            isActive ? 'bg-white border-r-4 border-accent-600 text-accent-700' : 'text-gray-700 hover:bg-gray-100/50'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            {isActive ? <ChevronRight size={14} className="text-blue-600" /> : <div className="w-3.5" />}
+                            {isActive ? <ChevronRight size={14} className="text-accent-600" /> : <div className="w-3.5" />}
                             <span className="truncate">{area}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
@@ -995,13 +995,13 @@ const PropertyDetailPage: React.FC = () => {
                         placeholder="Add new area..."
                         value={newAreaInput}
                         onChange={(e) => setNewAreaInput(e.target.value)}
-                        className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500"
+                        className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-accent-500"
                         onKeyDown={(e) => e.key === 'Enter' && handleAddArea()}
                       />
                       <button
                         type="button"
                         onClick={handleAddArea}
-                        className="rounded bg-blue-600 text-white p-1.5"
+                        className="rounded bg-accent-600 text-white p-1.5"
                       >
                         <Plus size={12} />
                       </button>
@@ -1014,7 +1014,7 @@ const PropertyDetailPage: React.FC = () => {
                   {selectedArea ? (
                     <div className="space-y-4 flex-1 flex flex-col">
                       <div className="border-b border-gray-200 pb-2">
-                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1">
+                        <h4 className="text-sm font-bold text-ink-900 flex items-center gap-1">
                           <ChevronRight size={16} className="text-gray-400" /> {selectedArea}
                         </h4>
                       </div>
@@ -1031,7 +1031,7 @@ const PropertyDetailPage: React.FC = () => {
                               key={index}
                               className="flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-gray-50/50 hover:bg-gray-50 transition"
                             >
-                              <span className="text-xs font-bold text-gray-800 capitalize">
+                              <span className="text-xs font-bold text-ink-800 capitalize">
                                 {item}
                               </span>
                               {isEditingLayout && (
@@ -1055,13 +1055,13 @@ const PropertyDetailPage: React.FC = () => {
                             placeholder={`Add check item to ${selectedArea}...`}
                             value={newItemInput}
                             onChange={(e) => setNewItemInput(e.target.value)}
-                            className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-xs outline-none focus:border-blue-500"
+                            className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-xs outline-none focus:border-accent-500"
                             onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
                           />
                           <button
                             type="button"
                             onClick={handleAddItem}
-                            className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition"
+                            className="inline-flex items-center gap-1 rounded bg-accent-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-700 transition"
                           >
                             <Plus size={14} /> Add Item
                           </button>
@@ -1084,13 +1084,13 @@ const PropertyDetailPage: React.FC = () => {
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <div>
-                  <h2 className="text-md font-bold text-gray-900">Active Tenancy & Lease Agreement</h2>
+                  <h2 className="text-md font-bold text-ink-900">Active Tenancy & Lease Agreement</h2>
                   <p className="text-xs text-gray-500">Manage records of current residents and agreement limits.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowTenancyModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-accent-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-accent-700 transition"
                 >
                   <Plus size={14} /> Add Tenancy Record
                 </button>
@@ -1120,7 +1120,7 @@ const PropertyDetailPage: React.FC = () => {
                           <p className="font-bold text-gray-400 uppercase tracking-wider mb-1">Tenant Names</p>
                           <div className="space-y-1">
                             {tenancy.tenantNames.map((name, idx) => (
-                              <div key={idx} className="font-semibold text-gray-900 flex items-center gap-1">
+                              <div key={idx} className="font-semibold text-ink-900 flex items-center gap-1">
                                 <User size={12} className="text-gray-400" /> {name}
                               </div>
                             ))}
@@ -1141,11 +1141,11 @@ const PropertyDetailPage: React.FC = () => {
                         <div className="md:col-span-2 pt-2 border-t border-gray-100 flex justify-between gap-4">
                           <div>
                             <p className="font-bold text-gray-400 uppercase tracking-wider mb-0.5">Lease Commencement</p>
-                            <p className="font-semibold text-gray-900">{formatPresentationDate(tenancy.leaseStartDate, 'Not set')}</p>
+                            <p className="font-semibold text-ink-900">{formatPresentationDate(tenancy.leaseStartDate, 'Not set')}</p>
                           </div>
                           <div>
                             <p className="font-bold text-gray-400 uppercase tracking-wider mb-0.5">Lease Expiry</p>
-                            <p className="font-semibold text-gray-950">{formatPresentationDate(tenancy.leaseEndDate, 'Not set')}</p>
+                            <p className="font-semibold text-brand-600">{formatPresentationDate(tenancy.leaseEndDate, 'Not set')}</p>
                           </div>
                         </div>
                       </div>
@@ -1159,8 +1159,8 @@ const PropertyDetailPage: React.FC = () => {
           {/* FALLBACK HIGH-FIDELITY VIEWS FOR WORKSPACE DRAWER BUTTONS */}
           {!['Summary', 'Inspections', 'Property Layout', 'Tenancy'].includes(activeTab) && (
             <div className="rounded-xl border border-gray-200 bg-white p-8 text-center space-y-3 shadow-sm min-h-[300px] flex flex-col justify-center">
-              <FileText size={36} className="mx-auto text-blue-500/80 animate-pulse" />
-              <h3 className="text-md font-bold text-gray-900">{activeTab} Section</h3>
+              <FileText size={36} className="mx-auto text-accent-500/80 animate-pulse" />
+              <h3 className="text-md font-bold text-ink-900">{activeTab} Section</h3>
               <p className="text-xs text-gray-500 max-w-sm mx-auto">
                 The properties detail module is fully configured for {activeTab}. In this deployment workspace, you can log attachments and complete standard property condition audits.
               </p>
@@ -1168,7 +1168,7 @@ const PropertyDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => showToast(`${activeTab} log is synced and active!`)}
-                  className="rounded bg-blue-50 border border-blue-200 px-4 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100/50"
+                  className="rounded bg-accent-50 border border-accent-200 px-4 py-2 text-xs font-bold text-accent-700 hover:bg-accent-100/50"
                 >
                   Verify Sync Status
                 </button>
@@ -1184,7 +1184,7 @@ const PropertyDetailPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl animate-in zoom-in-95 duration-200 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-ink-900 flex items-center gap-2">
                 <Edit2 size={18} /> Edit Property Record
               </h3>
               <button onClick={() => { propertyDirty.markClean(); setIsEditingProperty(false); }} className="text-gray-400 hover:text-gray-600">
@@ -1200,7 +1200,7 @@ const PropertyDetailPage: React.FC = () => {
                     required
                     value={editForm.address}
                     onChange={(e) => setEditForm(p => ({ ...p, address: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div>
@@ -1208,7 +1208,7 @@ const PropertyDetailPage: React.FC = () => {
                   <input
                     value={editForm.suburb}
                     onChange={(e) => setEditForm(p => ({ ...p, suburb: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div>
@@ -1216,7 +1216,7 @@ const PropertyDetailPage: React.FC = () => {
                   <input
                     value={editForm.state}
                     onChange={(e) => setEditForm(p => ({ ...p, state: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div>
@@ -1224,7 +1224,7 @@ const PropertyDetailPage: React.FC = () => {
                   <input
                     value={editForm.postcode}
                     onChange={(e) => setEditForm(p => ({ ...p, postcode: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div>
@@ -1232,7 +1232,7 @@ const PropertyDetailPage: React.FC = () => {
                   <input
                     value={editForm.propertyCode}
                     onChange={(e) => setEditForm(p => ({ ...p, propertyCode: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div>
@@ -1240,7 +1240,7 @@ const PropertyDetailPage: React.FC = () => {
                   <input
                     value={editForm.propertyManager}
                     onChange={(e) => setEditForm(p => ({ ...p, propertyManager: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div>
@@ -1248,7 +1248,7 @@ const PropertyDetailPage: React.FC = () => {
                   <select
                     value={editForm.propertyType}
                     onChange={(e) => setEditForm(p => ({ ...p, propertyType: e.target.value as any }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none bg-white"
                   >
                     {propertyTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -1258,7 +1258,7 @@ const PropertyDetailPage: React.FC = () => {
                   <input
                     value={editForm.buildingName}
                     onChange={(e) => setEditForm(p => ({ ...p, buildingName: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2 col-span-2">
@@ -1268,7 +1268,7 @@ const PropertyDetailPage: React.FC = () => {
                       type="number"
                       value={editForm.bedrooms}
                       onChange={(e) => setEditForm(p => ({ ...p, bedrooms: parseInt(e.target.value) || 0 }))}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                     />
                   </div>
                   <div>
@@ -1277,7 +1277,7 @@ const PropertyDetailPage: React.FC = () => {
                       type="number"
                       value={editForm.bathrooms}
                       onChange={(e) => setEditForm(p => ({ ...p, bathrooms: parseInt(e.target.value) || 0 }))}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                     />
                   </div>
                   <div>
@@ -1286,7 +1286,7 @@ const PropertyDetailPage: React.FC = () => {
                       type="number"
                       value={editForm.parking}
                       onChange={(e) => setEditForm(p => ({ ...p, parking: parseInt(e.target.value) || 0 }))}
-                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none"
                     />
                   </div>
                 </div>
@@ -1295,7 +1295,7 @@ const PropertyDetailPage: React.FC = () => {
                   <select
                     value={editForm.realEstateAgencyId}
                     onChange={(e) => setEditForm(p => ({ ...p, realEstateAgencyId: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none bg-white"
                   >
                     <option value="">-- Select Agency --</option>
                     {agenciesList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -1306,7 +1306,7 @@ const PropertyDetailPage: React.FC = () => {
                   <select
                     value={editForm.inspectionInterval}
                     onChange={(e) => setEditForm(p => ({ ...p, inspectionInterval: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none bg-white"
                   >
                     <option value="1 Month">1 Month</option>
                     <option value="2 Months">2 Months</option>
@@ -1356,7 +1356,7 @@ const PropertyDetailPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-md"
+                  className="rounded-lg bg-accent-600 px-5 py-2 text-sm font-semibold text-white hover:bg-accent-700 transition shadow-md"
                 >
                   {isUpdating ? 'Saving...' : 'Save Updates'}
                 </button>
@@ -1371,7 +1371,7 @@ const PropertyDetailPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-md font-bold text-gray-900 flex items-center gap-1.5">
+              <h3 className="text-md font-bold text-ink-900 flex items-center gap-1.5">
                 <Calendar size={18} /> Schedule Property Inspection
               </h3>
               <button onClick={() => { jobDirty.markClean(); setShowInspectionModal(false); }} className="text-gray-400 hover:text-gray-600">
@@ -1385,7 +1385,7 @@ const PropertyDetailPage: React.FC = () => {
                 <select
                   value={newInspectionForm.reportType}
                   onChange={(e) => setNewInspectionForm(p => ({ ...p, reportType: e.target.value as any }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-xs focus:border-blue-500 outline-none bg-white"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-xs focus:border-accent-500 outline-none bg-white"
                 >
                   <option value="Property Condition Report">Property Condition Report (Entry)</option>
                   <option value="Routine Inspection">Routine Inspection</option>
@@ -1445,7 +1445,7 @@ const PropertyDetailPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 shadow-md"
+                  className="rounded-lg bg-accent-600 px-4 py-2 text-xs font-semibold text-white hover:bg-accent-700 shadow-md"
                 >
                   Confirm Booking
                 </button>
@@ -1460,7 +1460,7 @@ const PropertyDetailPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-md font-bold text-gray-900 flex items-center gap-1.5">
+              <h3 className="text-md font-bold text-ink-900 flex items-center gap-1.5">
                 <Users size={18} /> New Lease Agreement
               </h3>
               <button onClick={() => setShowTenancyModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -1523,7 +1523,7 @@ const PropertyDetailPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 shadow-md"
+                  className="rounded-lg bg-accent-600 px-4 py-2 text-xs font-semibold text-white hover:bg-accent-700 shadow-md"
                 >
                   Register Agreement
                 </button>

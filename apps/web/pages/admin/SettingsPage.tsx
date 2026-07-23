@@ -248,7 +248,7 @@ const SettingsPage: React.FC = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-950">Settings</h1>
+        <h1 className="text-2xl font-bold text-brand-600">Settings</h1>
         <p className="text-sm text-gray-600">
           Verify system capabilities, connect external APIs, and configure Google integrations.
         </p>
@@ -263,7 +263,7 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 mt-4">
               <Database size={18} className="text-gray-500" />
-              <h2 className="font-semibold text-gray-950">Firebase</h2>
+              <h2 className="font-semibold text-brand-600">Firebase</h2>
             </div>
             <p className="mt-2 text-sm text-gray-600">
               {firebaseConfigured 
@@ -280,7 +280,7 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 mt-4">
               <Key size={18} className="text-gray-500" />
-              <h2 className="font-semibold text-gray-950">AI Commentary</h2>
+              <h2 className="font-semibold text-brand-600">AI Commentary</h2>
             </div>
             <p className="mt-2 text-sm text-gray-600">
               {aiConfigured ? 'Server-managed Vertex AI workflow available' : 'Cloud API endpoint not configured'}
@@ -295,7 +295,7 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 mt-4">
               <Globe size={18} className="text-gray-500" />
-              <h2 className="font-semibold text-gray-950">Cloud SQL</h2>
+              <h2 className="font-semibold text-brand-600">Cloud SQL</h2>
             </div>
             <p className="mt-2 text-sm text-gray-600">
               PostgreSQL database proxy connection pool is active
@@ -308,8 +308,8 @@ const SettingsPage: React.FC = () => {
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-5">
           <div>
-            <h2 className="text-lg font-bold text-gray-950 flex items-center gap-2">
-              <SettingsIcon size={20} className="text-blue-600" /> Google Workspace Integrations
+            <h2 className="text-lg font-bold text-brand-600 flex items-center gap-2">
+              <SettingsIcon size={20} className="text-accent-600" /> Google Workspace Integrations
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               Connect and sync data with Drive, Calendar, Gmail, Docs, Chat, Forms, Contacts, and Picker.
@@ -320,7 +320,7 @@ const SettingsPage: React.FC = () => {
             <button
               onClick={handleConnectGoogle}
               disabled={connecting}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-lg bg-accent-600 hover:bg-accent-700 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
             >
               {connecting ? 'Connecting...' : 'Connect Google Account'}
             </button>
@@ -360,14 +360,14 @@ const SettingsPage: React.FC = () => {
         {!googleConnected ? (
           <div className="p-8 text-center border border-dashed border-gray-200 rounded-lg bg-gray-50/50">
             <SettingsIcon size={40} className="mx-auto text-gray-300 mb-3" />
-            <p className="font-semibold text-gray-950 text-sm">Google Account not connected</p>
+            <p className="font-semibold text-brand-600 text-sm">Google Account not connected</p>
             <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1 mb-4">
               Connect your Google Workspace to read and write records across all Google Cloud productivity applications.
             </p>
             <button
               onClick={handleConnectGoogle}
               disabled={connecting}
-              className="rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
+              className="rounded-lg bg-accent-600 hover:bg-accent-700 disabled:opacity-50 px-4 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
             >
               {connecting ? 'Connecting...' : 'Connect Workspace Now'}
             </button>
@@ -394,8 +394,8 @@ const SettingsPage: React.FC = () => {
                     onClick={() => setActiveTab(tab.key as IntegrationTab)}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
                       active 
-                        ? 'bg-blue-50 text-blue-700 lg:w-full font-bold shadow-sm' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-950 lg:w-full'
+                        ? 'bg-accent-50 text-accent-700 lg:w-full font-bold shadow-sm' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-brand-600 lg:w-full'
                     }`}
                   >
                     <TabIcon size={16} />
@@ -409,14 +409,14 @@ const SettingsPage: React.FC = () => {
             <div className="min-w-0">
               {loadingData ? (
                 <div className="p-12 text-center text-sm text-gray-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600 mx-auto mb-3"></div>
                   Synchronizing records...
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Tab Header */}
                   <div className="border-b border-gray-100 pb-3 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-950 text-sm uppercase tracking-wider">
+                    <h3 className="font-bold text-brand-600 text-sm uppercase tracking-wider">
                       {activeTab === 'drive' && 'Drive Workspace files'}
                       {activeTab === 'calendar' && 'Calendar events'}
                       {activeTab === 'gmail' && 'Gmail Inbox'}
@@ -428,7 +428,7 @@ const SettingsPage: React.FC = () => {
                     </h3>
                     <button 
                       onClick={() => loadTabData(activeTab)} 
-                      className="text-xs text-blue-600 hover:underline font-semibold"
+                      className="text-xs text-accent-600 hover:underline font-semibold"
                     >
                       Refresh list
                     </button>
@@ -438,7 +438,7 @@ const SettingsPage: React.FC = () => {
                   {activeTab === 'drive' && (
                     <div className="space-y-5">
                       <form {...driveDirty.formProps} onSubmit={handleCreateFile} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 className="text-xs font-bold text-gray-950">Upload / Create text file in Google Drive</h4>
+                        <h4 className="text-xs font-bold text-brand-600">Upload / Create text file in Google Drive</h4>
                         <div className="grid sm:grid-cols-3 gap-2">
                           <input
                             required
@@ -456,7 +456,7 @@ const SettingsPage: React.FC = () => {
                         </div>
                         <button 
                           type="submit" 
-                          className="self-start inline-flex items-center gap-1.5 rounded bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+                          className="self-start inline-flex items-center gap-1.5 rounded bg-accent-600 hover:bg-accent-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
                         >
                           <Plus size={14} /> Upload File
                         </button>
@@ -470,7 +470,7 @@ const SettingsPage: React.FC = () => {
                             {files.map((file) => (
                               <div key={file.id} className="p-3 hover:bg-gray-50 flex justify-between items-center text-xs">
                                 <div>
-                                  <p className="font-semibold text-gray-950">{file.name}</p>
+                                  <p className="font-semibold text-brand-600">{file.name}</p>
                                   <p className="text-[10px] text-gray-500 mt-0.5">{file.mimeType} • ID: {file.id}</p>
                                 </div>
                                 {file.webViewLink && (
@@ -478,7 +478,7 @@ const SettingsPage: React.FC = () => {
                                     href={file.webViewLink} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="text-blue-600 hover:text-blue-800"
+                                    className="text-accent-600 hover:text-accent-800"
                                   >
                                     <ExternalLink size={14} />
                                   </a>
@@ -495,7 +495,7 @@ const SettingsPage: React.FC = () => {
                   {activeTab === 'calendar' && (
                     <div className="space-y-5">
                       <form {...calendarDirty.formProps} onSubmit={handleCreateEvent} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 className="text-xs font-bold text-gray-950">Add Event to primary Google Calendar</h4>
+                        <h4 className="text-xs font-bold text-brand-600">Add Event to primary Google Calendar</h4>
                         <div className="grid sm:grid-cols-3 gap-2">
                           <input
                             required
@@ -521,7 +521,7 @@ const SettingsPage: React.FC = () => {
                         </div>
                         <button 
                           type="submit" 
-                          className="self-start inline-flex items-center gap-1.5 rounded bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+                          className="self-start inline-flex items-center gap-1.5 rounded bg-accent-600 hover:bg-accent-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
                         >
                           <Plus size={14} /> Create Event
                         </button>
@@ -535,7 +535,7 @@ const SettingsPage: React.FC = () => {
                             {events.map((evt) => (
                               <div key={evt.id} className="p-3 hover:bg-gray-50 flex justify-between items-center text-xs">
                                 <div>
-                                  <p className="font-semibold text-gray-950">{evt.summary}</p>
+                                  <p className="font-semibold text-brand-600">{evt.summary}</p>
                                   <p className="text-[10px] text-gray-500 mt-0.5">
                                     Start: {evt.start.dateTime || evt.start.date} • End: {evt.end.dateTime || evt.end.date}
                                   </p>
@@ -545,7 +545,7 @@ const SettingsPage: React.FC = () => {
                                     href={evt.htmlLink} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="text-blue-600 hover:text-blue-800"
+                                    className="text-accent-600 hover:text-accent-800"
                                   >
                                     <ExternalLink size={14} />
                                   </a>
@@ -562,7 +562,7 @@ const SettingsPage: React.FC = () => {
                   {activeTab === 'gmail' && (
                     <div className="space-y-5">
                       <form {...gmailDirty.formProps} onSubmit={handleSendEmail} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 className="text-xs font-bold text-gray-950">Send Email with Gmail</h4>
+                        <h4 className="text-xs font-bold text-brand-600">Send Email with Gmail</h4>
                         <div className="grid gap-2">
                           <input
                             required
@@ -590,7 +590,7 @@ const SettingsPage: React.FC = () => {
                         </div>
                         <button 
                           type="submit" 
-                          className="self-start inline-flex items-center gap-1.5 rounded bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+                          className="self-start inline-flex items-center gap-1.5 rounded bg-accent-600 hover:bg-accent-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
                         >
                           <Send size={14} /> Send Message
                         </button>
@@ -603,7 +603,7 @@ const SettingsPage: React.FC = () => {
                           <div className="divide-y divide-gray-100 bg-white">
                             {emails.map((mail) => (
                               <div key={mail.id} className="p-3 hover:bg-gray-50 text-xs">
-                                <div className="flex justify-between font-semibold text-gray-950">
+                                <div className="flex justify-between font-semibold text-brand-600">
                                   <span>{mail.subject || 'No Subject'}</span>
                                   <span className="text-[10px] text-gray-500 font-normal">{mail.date}</span>
                                 </div>
@@ -621,7 +621,7 @@ const SettingsPage: React.FC = () => {
                   {activeTab === 'docs' && (
                     <div className="space-y-5">
                       <form {...docsDirty.formProps} onSubmit={handleCreateDoc} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 className="text-xs font-bold text-gray-950">Create Google Doc Document</h4>
+                        <h4 className="text-xs font-bold text-brand-600">Create Google Doc Document</h4>
                         <div className="flex gap-2">
                           <input
                             required
@@ -632,7 +632,7 @@ const SettingsPage: React.FC = () => {
                           />
                           <button 
                             type="submit" 
-                            className="inline-flex items-center gap-1.5 rounded bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded bg-accent-600 hover:bg-accent-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
                           >
                             <Plus size={14} /> Create Doc
                           </button>
@@ -647,7 +647,7 @@ const SettingsPage: React.FC = () => {
                             {files.filter(f => f.mimeType === 'application/vnd.google-apps.document').map((doc) => (
                               <div key={doc.id} className="p-3 hover:bg-gray-50 flex justify-between items-center text-xs">
                                 <div>
-                                  <p className="font-semibold text-gray-950">{doc.name}</p>
+                                  <p className="font-semibold text-brand-600">{doc.name}</p>
                                   <p className="text-[10px] text-gray-500 mt-0.5">MimeType: Google Doc • ID: {doc.id}</p>
                                 </div>
                                 {doc.webViewLink && (
@@ -655,7 +655,7 @@ const SettingsPage: React.FC = () => {
                                     href={doc.webViewLink} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="text-blue-600 hover:text-blue-800"
+                                    className="text-accent-600 hover:text-accent-800"
                                   >
                                     <ExternalLink size={14} />
                                   </a>
@@ -671,7 +671,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: CHAT */}
                   {activeTab === 'chat' && (
                     <div className="space-y-4">
-                      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 text-xs text-blue-800 space-y-1">
+                      <div className="rounded-lg border border-accent-200 bg-accent-50/50 p-4 text-xs text-accent-800 space-y-1">
                         <p className="font-bold">Google Chat Integration Mode</p>
                         <p>User-level API allows listing and communicating with joined Spaces.</p>
                       </div>
@@ -683,7 +683,7 @@ const SettingsPage: React.FC = () => {
                           <div className="divide-y divide-gray-100 bg-white">
                             {spaces.map((space) => (
                               <div key={space.name} className="p-3 hover:bg-gray-50 text-xs">
-                                <p className="font-semibold text-gray-950">{space.displayName || 'No Name'}</p>
+                                <p className="font-semibold text-brand-600">{space.displayName || 'No Name'}</p>
                                 <p className="text-[10px] text-gray-500 mt-0.5">Resource Name: {space.name} • Type: {space.type}</p>
                               </div>
                             ))}
@@ -697,7 +697,7 @@ const SettingsPage: React.FC = () => {
                   {activeTab === 'forms' && (
                     <div className="space-y-5">
                       <form {...formsDirty.formProps} onSubmit={handleCreateForm} className="grid gap-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 className="text-xs font-bold text-gray-950">Create Google Form</h4>
+                        <h4 className="text-xs font-bold text-brand-600">Create Google Form</h4>
                         <div className="flex gap-2">
                           <input
                             required
@@ -708,7 +708,7 @@ const SettingsPage: React.FC = () => {
                           />
                           <button 
                             type="submit" 
-                            className="inline-flex items-center gap-1.5 rounded bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded bg-accent-600 hover:bg-accent-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
                           >
                             <Plus size={14} /> Create Form
                           </button>
@@ -723,7 +723,7 @@ const SettingsPage: React.FC = () => {
                             {files.filter(f => f.mimeType === 'application/vnd.google-apps.form').map((formItem) => (
                               <div key={formItem.id} className="p-3 hover:bg-gray-50 flex justify-between items-center text-xs">
                                 <div>
-                                  <p className="font-semibold text-gray-950">{formItem.name}</p>
+                                  <p className="font-semibold text-brand-600">{formItem.name}</p>
                                   <p className="text-[10px] text-gray-500 mt-0.5">MimeType: Google Form • ID: {formItem.id}</p>
                                 </div>
                                 {formItem.webViewLink && (
@@ -731,7 +731,7 @@ const SettingsPage: React.FC = () => {
                                     href={formItem.webViewLink} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="text-blue-600 hover:text-blue-800"
+                                    className="text-accent-600 hover:text-accent-800"
                                   >
                                     <ExternalLink size={14} />
                                   </a>
@@ -754,7 +754,7 @@ const SettingsPage: React.FC = () => {
                           <div className="divide-y divide-gray-100 bg-white">
                             {contacts.map((contact) => (
                               <div key={contact.id} className="p-3 hover:bg-gray-50 text-xs">
-                                <p className="font-semibold text-gray-950">{contact.name}</p>
+                                <p className="font-semibold text-brand-600">{contact.name}</p>
                                 <p className="text-[10px] text-gray-500 mt-0.5">
                                   Email: {contact.email || '-'} • Phone: {contact.phone || '-'}
                                 </p>
@@ -769,7 +769,7 @@ const SettingsPage: React.FC = () => {
                   {/* ACTIVE TAB: PICKER (REAL INLINE REACT FILE PICKER) */}
                   {activeTab === 'picker' && (
                     <div className="space-y-4">
-                      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 text-xs text-blue-800">
+                      <div className="rounded-lg border border-accent-200 bg-accent-50/50 p-4 text-xs text-accent-800">
                         <p className="font-bold">Google Picker Experience</p>
                         <p className="mt-1">
                           Browse and select real files from your Google Drive inside this premium layout.
@@ -787,7 +787,7 @@ const SettingsPage: React.FC = () => {
                               href={pickerSelectedFile.webViewLink} 
                               target="_blank" 
                               rel="noreferrer" 
-                              className="text-blue-600 hover:underline font-semibold flex items-center gap-1 mt-1"
+                              className="text-accent-600 hover:underline font-semibold flex items-center gap-1 mt-1"
                             >
                               Open original file <ExternalLink size={12} />
                             </a>
@@ -796,7 +796,7 @@ const SettingsPage: React.FC = () => {
                       )}
 
                       <div className="border border-gray-100 rounded-lg overflow-hidden">
-                        <h4 className="text-xs font-bold text-gray-900 bg-gray-50 p-3 border-b border-gray-100 flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-ink-900 bg-gray-50 p-3 border-b border-gray-100 flex items-center gap-2">
                           <Search size={14} /> Drive Files Browser
                         </h4>
                         
@@ -809,11 +809,11 @@ const SettingsPage: React.FC = () => {
                                 key={file.id}
                                 onClick={() => setPickerSelectedFile(file)}
                                 className={`w-full p-3 text-left hover:bg-gray-50 flex justify-between items-center text-xs ${
-                                  pickerSelectedFile?.id === file.id ? 'bg-blue-50/70 border-l-4 border-blue-600' : ''
+                                  pickerSelectedFile?.id === file.id ? 'bg-accent-50/70 border-l-4 border-accent-600' : ''
                                 }`}
                               >
                                 <div>
-                                  <p className="font-semibold text-gray-950">{file.name}</p>
+                                  <p className="font-semibold text-brand-600">{file.name}</p>
                                   <p className="text-[10px] text-gray-500 mt-0.5">{file.mimeType}</p>
                                 </div>
                                 <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold">
