@@ -64,7 +64,16 @@ jobs:
           if-no-files-found: error
           retention-days: 1
       - name: Unit and rules tests
-        run: npm run test:run
+        id: unit_tests
+        run: npm run test:run 2>&1 | tee unit-tests.log
+      - name: Upload unit test diagnostics
+        if: failure() && steps.unit_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-diagnostics
+          path: unit-tests.log
+          if-no-files-found: error
+          retention-days: 2
       - name: Build applications
         id: build_apps
         run: npm run build:apps 2>&1 | tee build-apps.log
