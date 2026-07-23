@@ -21,31 +21,72 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+interface MockAccount {
+  uid: string;
+  email: string;
+  password: string;
+  displayName: string;
+  role: UserRole;
+}
+
+// Hardcoded mock accounts that bypass Firebase Authentication entirely.
+// Add new entries here to grant additional hardcoded logins.
+const MOCK_ACCOUNTS: MockAccount[] = [
+  {
+    uid: 'proinspect-mock-admin-uid',
+    email: 'info@proinspect.systems',
+    password: 'Foxtrot19!',
+    displayName: 'ProInspect Admin',
+    role: 'proinspect_admin',
+  },
+  {
+    uid: 'rbp-mock-admin-uid',
+    email: 'info@remotebusinesspartner.com.au',
+    password: 'Foxtrot19!',
+    displayName: 'Remote Business Partner Admin',
+    role: 'proinspect_admin',
+  },
+];
+
+const MOCK_LOGIN_STORAGE_KEY = 'pcr_proinspect_logged_in';
+const MOCK_LOGIN_EMAIL_STORAGE_KEY = 'pcr_proinspect_logged_in_email';
+
+const findMockAccountByEmail = (email: string): MockAccount | undefined =>
+  MOCK_ACCOUNTS.find((account) => account.email.toLowerCase() === email.toLowerCase());
+
+const buildMockIdentity = (account: MockAccount): { mockUser: User; mockProfile: UserProfile } => {
+  const mockUser = {
+    uid: account.uid,
+    email: account.email,
+    displayName: account.displayName,
+    emailVerified: true,
+  } as unknown as User;
+
+  const mockProfile: UserProfile = {
+    id: account.uid,
+    agencyId: 'unprovisioned-agency',
+    displayName: account.displayName,
+    email: account.email,
+    role: account.role,
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return { mockUser, mockProfile };
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   useEffect(() => {
-    const isMockLoggedIn = localStorage.getItem('pcr_proinspect_logged_in') === 'true';
+    const isMockLoggedIn = localStorage.getItem(MOCK_LOGIN_STORAGE_KEY) === 'true';
     if (isMockLoggedIn) {
-      const mockUser = {
-        uid: 'proinspect-mock-admin-uid',
-        email: 'info@proinspect.systems',
-        displayName: 'ProInspect Admin',
-        emailVerified: true,
-      } as unknown as User;
-
-      const mockProfile: UserProfile = {
-        id: 'proinspect-mock-admin-uid',
-        agencyId: 'unprovisioned-agency',
-        displayName: 'ProInspect Admin',
-        email: 'info@proinspect.systems',
-        role: 'proinspect_admin',
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const storedEmail = localStorage.getItem(MOCK_LOGIN_EMAIL_STORAGE_KEY);
+      const account = (storedEmail && findMockAccountByEmail(storedEmail)) ?? MOCK_ACCOUNTS[0];
+      const { mockUser, mockProfile } = buildMockIdentity(account);
 
       setCurrentUser(mockUser);
       setUserProfile(mockProfile);
@@ -65,26 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
-    if (email === 'info@proinspect.systems' && password === 'Foxtrot19!') {
-      const mockUser = {
-        uid: 'proinspect-mock-admin-uid',
-        email: 'info@proinspect.systems',
-        displayName: 'ProInspect Admin',
-        emailVerified: true,
-      } as unknown as User;
+    const mockAccount = findMockAccountByEmail(email);
+    if (mockAccount && mockAccount.password === password) {
+      const { mockUser, mockProfile } = buildMockIdentity(mockAccount);
 
-      const mockProfile: UserProfile = {
-        id: 'proinspect-mock-admin-uid',
-        agencyId: 'unprovisioned-agency',
-        displayName: 'ProInspect Admin',
-        email: 'info@proinspect.systems',
-        role: 'proinspect_admin',
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      localStorage.setItem('pcr_proinspect_logged_in', 'true');
+      localStorage.setItem(MOCK_LOGIN_STORAGE_KEY, 'true');
+      localStorage.setItem(MOCK_LOGIN_EMAIL_STORAGE_KEY, mockAccount.email);
       setCurrentUser(mockUser);
       setUserProfile(mockProfile);
 
@@ -105,7 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async (): Promise<void> => {
     await Promise.all([purgeOfflineQueueOnSignOut(), purgeOfflineWorkspace()]);
-    localStorage.removeItem('pcr_proinspect_logged_in');
+    localStorage.removeItem(MOCK_LOGIN_STORAGE_KEY);
+    localStorage.removeItem(MOCK_LOGIN_EMAIL_STORAGE_KEY);
     if (auth) {
       try {
         await signOutUser();
