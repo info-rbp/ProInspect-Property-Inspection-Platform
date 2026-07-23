@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CalendarClock, CheckCircle2, LoaderCircle, PauseCircle, PlayCircle, ShieldAlert, UserRoundCog, XCircle } from 'lucide-react';
 import type { InspectionJob, InspectionJobStatus, PropertyRecord } from '../../types/platform';
+import { useAuth } from '../../contexts/AuthContext';
+import { runReportQuality } from '../../features/report-workspace/api/reportCommands';
 import { getInspectionJob, runInspectionJobCommand, type InspectionJobCommand } from '../../services/platform/inspectionJobService';
 import { getProperty } from '../../services/platform/propertyService';
 
@@ -15,6 +17,7 @@ const primary: Partial<Record<InspectionJobStatus, { command: InspectionJobComma
 
 const InspectionJobDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
+  const { userProfile } = useAuth();
   const [job, setJob] = useState<InspectionJob | null>(null);
   const [property, setProperty] = useState<PropertyRecord | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,9 +47,16 @@ const InspectionJobDetailPage: React.FC = () => {
   const statusLabel = useMemo(() => job?.status.replaceAll('_', ' ') ?? '', [job?.status]);
 
   const command = async (name: InspectionJobCommand, body: Record<string, unknown> = {}) => {
-    if (!jobId) return;
+    if (!jobId || !job) return;
     setBusy(true); setError(undefined); setMessage(undefined);
     try {
+      if (['complete-photo-upload', 'submit-fieldwork'].includes(name)) {
+        if (!job.reportId || !userProfile?.agencyId) throw new Error('A cloud report and agency context are required before fieldwork can be submitted.');
+        const quality = await runReportQuality(userProfile.agencyId, job.reportId, 'field_submission');
+        const blockers = quality.results.filter((result) => result.blocking);
+        if (quality.status !== 'ready') throw new Error(`${blockers.length} field quality blocker${blockers.length === 1 ? '' : 's'} must be resolved before continuing.`);
+      }
+      if (name === 'assign' && !inspectorId.trim() && !job.assignedInspectorId) throw new Error('Assign an active inspector before confirming this booking.');
       const updated = await runInspectionJobCommand(jobId, name, body);
       setJob(updated);
       setMessage(`Command completed: ${name.replaceAll('-', ' ')}.`);
@@ -65,7 +75,7 @@ const InspectionJobDetailPage: React.FC = () => {
 
     <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"><dl className="grid gap-4 md:grid-cols-2"><div><dt className="text-xs font-bold uppercase tracking-wider text-stone-500">Scheduled</dt><dd className="mt-1 font-semibold">{job.scheduledAt ? new Date(job.scheduledAt).toLocaleString() : 'Not scheduled'}</dd></div><div><dt className="text-xs font-bold uppercase tracking-wider text-stone-500">Inspector</dt><dd className="mt-1 font-semibold">{job.assignedInspectorId || 'Unassigned'}</dd></div><div><dt className="text-xs font-bold uppercase tracking-wider text-stone-500">Reviewer</dt><dd className="mt-1 font-semibold">{job.assignedReviewerId || 'Unassigned'}</dd></div><div><dt className="text-xs font-bold uppercase tracking-wider text-stone-500">Report</dt><dd className="mt-1 font-semibold">{job.reportId ? <Link className="text-amber-700 underline" to={`/app/admin/reports/${job.reportId}/edit`}>Open report workspace</Link> : 'No report linked'}</dd></div></dl>{job.notes ? <p className="mt-4 border-t border-stone-100 pt-4 text-sm text-stone-600">{job.notes}</p> : null}</section>
 
-    <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2"><PlayCircle className="text-emerald-700" /><h2 className="font-bold text-stone-950">Workflow action</h2></div><p className="mt-1 text-sm text-stone-500">Only commands valid for the current job status are accepted by the server.</p><div className="mt-4 flex flex-wrap gap-2">{availablePrimary ? <button type="button" disabled={busy} onClick={() => void command(availablePrimary.command, availablePrimary.command === 'assign' ? { assignedInspectorId: inspectorId || job.assignedInspectorId } : {})} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-black text-white disabled:opacity-40">{busy ? <LoaderCircle size={16} className="animate-spin" /> : <PlayCircle size={16} />}{availablePrimary.label}</button> : null}{job.status === 'on_hold' ? <><select value={resumeStatus} onChange={(event) => setResumeStatus(event.target.value as InspectionJobStatus)} className="rounded-lg border border-stone-300 px-3 text-sm"><option value="assigned">Assigned</option><option value="inspection_started">Inspection started</option><option value="photos_uploading">Photos uploading</option><option value="photos_uploaded">Photos uploaded</option><option value="inspection_submitted">Fieldwork submitted</option></select><button type="button" disabled={busy} onClick={() => void command('resume', { resumeStatus })} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-black text-white"><PlayCircle size={16} /> Resume</button></> : null}</div></section>
+    <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2"><PlayCircle className="text-emerald-700" /><h2 className="font-bold text-stone-950">Workflow action</h2></div><p className="mt-1 text-sm text-stone-500">Only commands valid for the current job status are accepted by the server. Evidence and component quality gates run before field submission.</p><div className="mt-4 flex flex-wrap gap-2">{availablePrimary ? <button type="button" disabled={busy} onClick={() => void command(availablePrimary.command, availablePrimary.command === 'assign' ? { assignedInspectorId: inspectorId || job.assignedInspectorId } : {})} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-black text-white disabled:opacity-40">{busy ? <LoaderCircle size={16} className="animate-spin" /> : <PlayCircle size={16} />}{availablePrimary.label}</button> : null}{job.status === 'on_hold' ? <><select value={resumeStatus} onChange={(event) => setResumeStatus(event.target.value as InspectionJobStatus)} className="rounded-lg border border-stone-300 px-3 text-sm"><option value="assigned">Assigned</option><option value="inspection_started">Inspection started</option><option value="photos_uploading">Photos uploading</option><option value="photos_uploaded">Photos uploaded</option><option value="inspection_submitted">Fieldwork submitted</option></select><button type="button" disabled={busy} onClick={() => void command('resume', { resumeStatus })} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-black text-white"><PlayCircle size={16} /> Resume</button></> : null}</div></section>
 
     <div className="grid gap-5 lg:grid-cols-2">
       <section className="rounded-2xl border border-stone-200 bg-white p-5"><div className="flex items-center gap-2"><UserRoundCog className="text-amber-700" /><h2 className="font-bold text-stone-950">Assignments</h2></div><div className="mt-4 grid gap-3"><label className="text-xs font-bold uppercase tracking-wider text-stone-500">Inspector ID<input value={inspectorId} onChange={(event) => setInspectorId(event.target.value)} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal normal-case tracking-normal" /></label><label className="text-xs font-bold uppercase tracking-wider text-stone-500">Reviewer ID<input value={reviewerId} onChange={(event) => setReviewerId(event.target.value)} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal normal-case tracking-normal" /></label><button type="button" disabled={busy || (!inspectorId.trim() && !reviewerId.trim())} onClick={() => void command('reassign', { ...(inspectorId.trim() ? { assignedInspectorId: inspectorId.trim() } : {}), ...(reviewerId.trim() ? { assignedReviewerId: reviewerId.trim() } : {}), reason: 'Assignment updated from job workspace.' })} className="min-h-10 rounded-lg border border-stone-950 text-sm font-bold">Update assignments</button></div></section>
