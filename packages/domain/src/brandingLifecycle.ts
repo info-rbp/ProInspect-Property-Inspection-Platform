@@ -1,17 +1,9 @@
-import { createHash } from 'node:crypto';
 import type { AgencyBrandingVersion } from './serviceRecords.js';
+import { stableHash } from './stableHash.js';
 
 export class BrandingLifecycleError extends Error {
   readonly status = 409;
   constructor(readonly code: string, message: string) { super(message); }
-}
-
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
 }
 
 function validColour(value: string): boolean { return /^#[0-9a-f]{6}$/iu.test(value); }
@@ -26,7 +18,7 @@ export function validateBrandingDraft(record: AgencyBrandingVersion): void {
 }
 
 export function brandingContentHash(record: AgencyBrandingVersion): string {
-  const content = {
+  return stableHash({
     agencyId: record.agencyId,
     version: record.version,
     logoEvidenceId: record.logoEvidenceId,
@@ -36,8 +28,7 @@ export function brandingContentHash(record: AgencyBrandingVersion): string {
     reportFooterText: record.reportFooterText,
     disclaimerTemplateId: record.disclaimerTemplateId,
     emailSenderName: record.emailSenderName,
-  };
-  return createHash('sha256').update(canonical(content)).digest('hex');
+  });
 }
 
 export function publishBranding(record: AgencyBrandingVersion): AgencyBrandingVersion {
