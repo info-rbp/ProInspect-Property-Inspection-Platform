@@ -7,6 +7,7 @@ import {
   COMPONENT_TESTING_METHODS,
   COMPONENT_VISIBILITY_STATES,
   COMPONENT_WORKING_STATUSES,
+  REPORT_EVIDENCE_PURPOSES,
   type ReportAggregate,
 } from '@pcr/domain';
 import type { ValidationResult, ValidationSchema } from './index.js';
@@ -19,6 +20,7 @@ const visibility = new Set<string>(COMPONENT_VISIBILITY_STATES);
 const testingMethods = new Set<string>(COMPONENT_TESTING_METHODS);
 const reviews = new Set<string>(COMPONENT_REVIEW_STATUSES);
 const comparisons = new Set<string>(COMPONENT_COMPARISON_STATUSES);
+const evidencePurposes = new Set<string>(REPORT_EVIDENCE_PURPOSES);
 
 function failure(message: string, field: string): ValidationResult<never> {
   return { ok: false, error: { code: 'VALIDATION_ERROR', message, status: 400, details: { field } } };
@@ -122,12 +124,27 @@ export const reportAggregateSchema: ValidationSchema<ReportAggregate> = {
           return failure('defects must be an array of strings.', `${prefix}.defects`);
         }
         if (!Array.isArray(component.value.photoReferences)) return failure('photoReferences must be an array.', `${prefix}.photoReferences`);
+        const photoSequences = new Set<number>();
         for (const [photoIndex, reference] of component.value.photoReferences.entries()) {
-          const photo = object(reference, `${prefix}.photoReferences[${photoIndex}]`);
+          const photoPrefix = `${prefix}.photoReferences[${photoIndex}]`;
+          const photo = object(reference, photoPrefix);
           if (!photo.ok) return photo;
           for (const field of ['photoId', 'objectPath']) {
-            const result = string(photo.value[field], `${prefix}.photoReferences[${photoIndex}].${field}`);
+            const result = string(photo.value[field], `${photoPrefix}.${field}`);
             if (!result.ok) return result;
+          }
+          if (photo.value.purpose !== undefined) {
+            const purpose = enumValue(photo.value.purpose, evidencePurposes, `${photoPrefix}.purpose`);
+            if (!purpose.ok) return purpose;
+          }
+          if (photo.value.sequence !== undefined) {
+            const photoSequence = positiveInteger(photo.value.sequence, `${photoPrefix}.sequence`);
+            if (!photoSequence.ok) return photoSequence;
+            if (photoSequences.has(photoSequence.value)) return failure('Evidence sequence values must be unique within a component.', `${photoPrefix}.sequence`);
+            photoSequences.add(photoSequence.value);
+          }
+          if (photo.value.contentType !== undefined && (typeof photo.value.contentType !== 'string' || !photo.value.contentType.trim())) {
+            return failure('contentType must be a non-empty string.', `${photoPrefix}.contentType`);
           }
         }
         if (component.value.quantity !== undefined && (typeof component.value.quantity !== 'number' || component.value.quantity < 0)) {
