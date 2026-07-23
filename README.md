@@ -64,6 +64,24 @@ This starts:
 
 Detailed instructions are in [Local Development](docs/development/local-development.md).
 
+## Environment configuration (Firebase and AI Commentary keys)
+
+The web application's Settings page reports "Needs attention" for
+**Firebase** and **AI Commentary** until their keys are supplied. Both are
+build-time Vite environment variables consumed by `apps/web` — see
+[Environment configuration](docs/development/environment-configuration.md)
+for exactly which keys each card needs, where to obtain them, and how to
+inject them for local development, CI, and Cloudflare Pages/GitHub Actions
+deployments.
+
+Quick start:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+# edit apps/web/.env.local with real values, then:
+npm run build:packages && npm run build --workspace @pcr/web
+```
+
 ## Validation
 
 ```bash
