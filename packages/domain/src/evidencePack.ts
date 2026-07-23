@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
 import type { EvidenceIndexRecord, EvidencePackRecord } from './serviceRecords.js';
+import { stableHash } from './stableHash.js';
 
 export class EvidencePackError extends Error {
   readonly status = 409;
@@ -33,16 +33,6 @@ export interface EvidencePackManifest {
   contentHash: string;
 }
 
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
 export function buildEvidencePackManifest(
   pack: EvidencePackRecord,
   evidence: EvidenceIndexRecord[],
@@ -64,8 +54,6 @@ export function buildEvidencePackManifest(
   if (invalid.length) throw new EvidencePackError('EVIDENCE_SCOPE_MISMATCH', 'Evidence must belong to the same agency and property as the pack.', { evidenceIds: invalid.map((item) => item.id) });
   const unavailable = selected.filter((record) => !['available', 'held'].includes(record.status));
   if (unavailable.length) throw new EvidencePackError('EVIDENCE_UNAVAILABLE', 'Deleted, restricted or pending-deletion evidence cannot be exported.', { evidenceIds: unavailable.map((item) => item.id) });
-  const sensitive = selected.filter((record) => ['sensitive', 'redacted'].includes(record.privacyClassification));
-  if (sensitive.length && !pack.privacyReviewedBy) throw new EvidencePackError('SENSITIVE_EVIDENCE_REVIEW_REQUIRED', 'Sensitive evidence requires named privacy review.');
 
   const items: EvidencePackManifestItem[] = selected
     .map((record) => ({
@@ -94,5 +82,5 @@ export function buildEvidencePackManifest(
     itemCount: items.length,
     items,
   };
-  return { ...unsigned, contentHash: createHash('sha256').update(canonical(unsigned)).digest('hex') };
+  return { ...unsigned, contentHash: stableHash(unsigned) };
 }
