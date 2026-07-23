@@ -36,6 +36,9 @@ export interface ImportJobRecord {
   createdBy: string;
   createdAt: string;
   completedAt?: string;
+  acceptedCandidateCount?: number;
+  materialisedReportId?: string;
+  importManifestHash?: string;
 }
 
 export interface ImportedFactCandidate {
@@ -45,9 +48,13 @@ export interface ImportedFactCandidate {
   sourceLocator: { page?: number; imageId?: string; boundingBox?: number[] };
   candidateType: 'metadata' | 'area' | 'component' | 'commentary' | 'photo' | 'tenant_amendment';
   extractedValue: unknown;
+  amendedValue?: unknown;
   suggestedTargetId?: string;
   confidence: number;
   reviewStatus: 'pending' | 'accepted' | 'amended' | 'rejected';
+  rejectionReason?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
 }
 
 export interface EvidenceIndexRecord {
