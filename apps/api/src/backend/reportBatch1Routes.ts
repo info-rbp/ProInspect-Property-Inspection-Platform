@@ -40,6 +40,10 @@ function hash(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
 
+function clean<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 async function idempotent(
   dependencies: ApiDependencies,
   req: IncomingMessage,
@@ -100,7 +104,7 @@ function clonedAggregate(
   const carryCommentary = body.carryCommentary === true;
   const carryMaintenance = body.carryMaintenance === true;
   const timestamp = new Date().toISOString();
-  return {
+  const draft: ReportAggregate = {
     report: {
       ...source.report,
       id: targetReportId,
@@ -133,43 +137,41 @@ function clonedAggregate(
         assignedBy: actorId,
       } : undefined,
     },
-    areas: source.areas.map((area, areaIndex) => {
-      const areaId = randomUUID();
-      return {
-        id: areaId,
-        name: area.name,
-        sequence: areaIndex + 1,
-        overallCommentary: carryCommentary ? area.overallCommentary : undefined,
-        components: area.components.map((component) => ({
-          ...component,
-          id: randomUUID(),
-          sourceComponentId: component.id,
-          visibility: 'visible',
-          conditionCategory: 'unable_to_confirm',
-          cleanlinessCategory: 'unable_to_confirm',
-          workingStatus: 'untested',
-          testStatus: 'untested',
-          testingMethod: 'not_tested',
-          defects: carryMaintenance && component.maintenanceRequired ? [...component.defects] : [],
-          maintenanceRequired: carryMaintenance && component.maintenanceRequired,
-          safetyConcern: false,
-          maintenanceCandidateIds: [],
-          commentary: carryCommentary ? component.commentary : 'Assessment pending.',
-          photoReferences: [],
-          aiConfidence: undefined,
-          reviewStatus: 'draft',
-          comparisonStatus: 'not_compared',
-          comparisonConfidence: undefined,
-          tenantResponseId: undefined,
-          lastReviewedBy: undefined,
-          lastReviewedAt: undefined,
-          version: undefined,
-          createdAt: undefined,
-          updatedAt: undefined,
-        })),
-      };
-    }),
+    areas: source.areas.map((area, areaIndex) => ({
+      id: randomUUID(),
+      name: area.name,
+      sequence: areaIndex + 1,
+      overallCommentary: carryCommentary ? area.overallCommentary : undefined,
+      components: area.components.map((component) => ({
+        ...component,
+        id: randomUUID(),
+        sourceComponentId: component.id,
+        visibility: 'visible',
+        conditionCategory: 'unable_to_confirm',
+        cleanlinessCategory: 'unable_to_confirm',
+        workingStatus: 'untested',
+        testStatus: 'untested',
+        testingMethod: 'not_tested',
+        defects: carryMaintenance && component.maintenanceRequired ? [...component.defects] : [],
+        maintenanceRequired: carryMaintenance && component.maintenanceRequired,
+        safetyConcern: false,
+        maintenanceCandidateIds: [],
+        commentary: carryCommentary ? component.commentary : 'Assessment pending.',
+        photoReferences: [],
+        aiConfidence: undefined,
+        reviewStatus: 'draft',
+        comparisonStatus: 'not_compared',
+        comparisonConfidence: undefined,
+        tenantResponseId: undefined,
+        lastReviewedBy: undefined,
+        lastReviewedAt: undefined,
+        version: undefined,
+        createdAt: undefined,
+        updatedAt: undefined,
+      })),
+    })),
   };
+  return clean(draft);
 }
 
 export async function routeBatchOneReportRequest(
