@@ -3,6 +3,9 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { AuthorisationTarget, DomainErrorShape, SecurityCapability } from '@pcr/domain';
 import { ApiError, routeApiRequest, type ApiResponse } from './backend/router.js';
 import { routeReportAggregateRequest } from './backend/reportRoutes.js';
+import { routeBatchOneReportRequest } from './backend/reportBatch1Routes.js';
+import { routeInspectionJobCommandRequest } from './backend/inspectionJobCommandRoutes.js';
+import { routeTemplateLibraryRequest } from './backend/templateLibraryRoutes.js';
 import { buildOpenApiDocument } from './backend/openapi.js';
 import type { ApiDependencies } from './backend/types.js';
 import { authenticateAndAuthorise, SecurityError } from './security/authoriseRequest.js';
@@ -65,16 +68,19 @@ function errorResponse(error: unknown, correlationId: string): ApiResponse {
     }
   }
   console.error(JSON.stringify({ level: 'error', message: 'api.unhandled_error', correlationId, error: error instanceof Error ? error.message : String(error) }));
-  return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } } };
+  return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } };
 }
 
-function reportRoute(urlValue: string | undefined): { reportId?: string; path: string[] } | undefined {
+function resourcePath(urlValue: string | undefined, resource: string): string[] | undefined {
   const parts = new URL(urlValue ?? '/', 'http://localhost').pathname.split('/').filter(Boolean);
-  if (parts[0] !== 'api' || parts[1] !== 'v1' || parts[2] !== 'reports') return undefined;
-  return {
-    ...(parts[3] ? { reportId: parts[3] } : {}),
-    path: parts.slice(4),
-  };
+  if (parts[0] !== 'api' || parts[1] !== 'v1' || parts[2] !== resource) return undefined;
+  return parts.slice(3);
+}
+
+function agencyId(req: IncomingMessage): string {
+  const value = req.headers['x-agency-id']?.toString().trim();
+  if (!value) throw new ApiError(400, 'AGENCY_HEADER_REQUIRED', 'x-agency-id is required.');
+  return value;
 }
 
 export function createRequestHandler(dependencies: ApiDependencies = createSecurityDependencies()) {
@@ -122,18 +128,34 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
         return;
       }
 
-      const specialReportRoute = reportRoute(req.url);
-      if (specialReportRoute) {
-        const agencyId = req.headers['x-agency-id']?.toString().trim();
-        if (!agencyId) throw new ApiError(400, 'AGENCY_HEADER_REQUIRED', 'x-agency-id is required.');
-        const reportResponse = await routeReportAggregateRequest(
-          req,
-          dependencies,
-          correlationId,
-          agencyId,
-          specialReportRoute.reportId,
-          specialReportRoute.path,
-        );
+      const templatePath = resourcePath(req.url, 'template-library');
+      if (templatePath) {
+        const response = await routeTemplateLibraryRequest(req, dependencies, correlationId, agencyId(req), templatePath);
+        if (response) {
+          sendResponse(response);
+          return;
+        }
+      }
+
+      const jobPath = resourcePath(req.url, 'inspection-jobs');
+      if (jobPath) {
+        const response = await routeInspectionJobCommandRequest(req, dependencies, correlationId, agencyId(req), jobPath);
+        if (response) {
+          sendResponse(response);
+          return;
+        }
+      }
+
+      const reportPath = resourcePath(req.url, 'reports');
+      if (reportPath) {
+        const reportId = reportPath[0];
+        const nested = reportPath.slice(1);
+        const batchOneResponse = await routeBatchOneReportRequest(req, dependencies, correlationId, agencyId(req), reportId, nested);
+        if (batchOneResponse) {
+          sendResponse(batchOneResponse);
+          return;
+        }
+        const reportResponse = await routeReportAggregateRequest(req, dependencies, correlationId, agencyId(req), reportId, nested);
         if (reportResponse) {
           sendResponse(reportResponse);
           return;
