@@ -121,4 +121,16 @@ jobs:
           if-no-files-found: error
           retention-days: 2
       - name: Targeted cross-browser shell and accessibility suite
-        run: npm run test:e2e -- --project=firefox --project=webkit --project=mobile-chrome --project=mobile-safari
+        id: cross_browser
+        run: npm run test:e2e -- --project=firefox --project=webkit --project=mobile-chrome --project=mobile-safari 2>&1 | tee cross-browser.log
+      - name: Upload cross-browser diagnostics
+        if: failure() && steps.cross_browser.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-browser-playwright-diagnostics
+          path: |
+            cross-browser.log
+            playwright-report
+            test-results
+          if-no-files-found: error
+          retention-days: 2
