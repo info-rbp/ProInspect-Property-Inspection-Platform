@@ -7,8 +7,9 @@ import type {
   ReportLifecycleStatus,
   SecurityCapability,
 } from '@pcr/domain';
-import type { SecurityDependencies } from '../security/types.js';
 import type { QualityRun, QualityStage, QualityWaiver } from '@pcr/quality';
+import type { TemplateRepository } from '@pcr/templates/registry';
+import type { SecurityDependencies } from '../security/types.js';
 
 export interface StoredRecord {
   id: string;
@@ -90,6 +91,7 @@ export interface ApiDependencies extends SecurityDependencies {
   idempotency: IdempotencyStore;
   tasks: TaskDispatcher;
   uploads: UploadSessionIssuer;
+  templateRepository?: (agencyId: string, actorId: string) => TemplateRepository;
 }
 
 export interface RoutePolicy {
