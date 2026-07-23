@@ -31,6 +31,21 @@ export interface BookingResult {
 }
 type VersionedInspectionJob = InspectionJob & { version?: number };
 
+export type InspectionJobCommand =
+  | 'assign'
+  | 'reassign'
+  | 'reschedule'
+  | 'start-inspection'
+  | 'begin-photo-upload'
+  | 'complete-photo-upload'
+  | 'submit-fieldwork'
+  | 'hold'
+  | 'resume'
+  | 'record-no-access'
+  | 'record-unsafe'
+  | 'cancel'
+  | 'reopen';
+
 export const createInspectionJob = async (input: CreateInspectionJobInput): Promise<InspectionJob> => {
   const inspectionJobId = generateId();
   if (isFirebaseConfigured()) {
@@ -105,28 +120,50 @@ export const updateInspectionJob = async (
   return updatedInspectionJob;
 };
 
+export const runInspectionJobCommand = async (
+  inspectionJobId: string,
+  command: InspectionJobCommand,
+  body: Record<string, unknown> = {},
+): Promise<InspectionJob> => {
+  const existing = await getInspectionJob(inspectionJobId);
+  if (!existing) throw new Error('Inspection job not found.');
+  if (!isFirebaseConfigured()) {
+    const localTargets: Partial<Record<InspectionJobCommand, InspectionJobStatus>> = {
+      assign: 'assigned', 'start-inspection': 'inspection_started', 'begin-photo-upload': 'photos_uploading',
+      'complete-photo-upload': 'photos_uploaded', 'submit-fieldwork': 'inspection_submitted', hold: 'on_hold',
+      'record-no-access': 'on_hold', 'record-unsafe': 'on_hold', cancel: 'cancelled', reopen: 'draft',
+    };
+    const status = command === 'resume' ? body.resumeStatus as InspectionJobStatus : localTargets[command] ?? existing.status;
+    return updateInspectionJob(inspectionJobId, { ...body, status });
+  }
+  const expectedVersion = (existing as VersionedInspectionJob).version ?? 1;
+  return apiRequest<InspectionJob>(existing.agencyId, `/api/v1/inspection-jobs/${encodeURIComponent(inspectionJobId)}/commands/${command}`, {
+    method: 'POST', body: { ...body, expectedVersion }, baseVersion: expectedVersion,
+    entityType: 'job', entityId: inspectionJobId, action: command, announceSuccess: true, queueWhenOffline: false,
+  });
+};
+
 export const assignInspector = async (inspectionJobId: string, assignedInspectorId: string): Promise<InspectionJob> =>
-  updateInspectionJob(inspectionJobId, { assignedInspectorId, status: 'assigned' });
+  runInspectionJobCommand(inspectionJobId, 'reassign', { assignedInspectorId, reason: 'Inspector assigned by operator.' });
 
 export const assignReviewer = async (inspectionJobId: string, assignedReviewerId: string): Promise<InspectionJob> =>
-  updateInspectionJob(inspectionJobId, { assignedReviewerId });
+  runInspectionJobCommand(inspectionJobId, 'reassign', { assignedReviewerId, reason: 'Reviewer assigned by operator.' });
 
 export const updateInspectionJobStatus = async (
   inspectionJobId: string,
   status: InspectionJobStatus,
 ): Promise<InspectionJob> => {
-  const existing = await getInspectionJob(inspectionJobId);
-  if (!existing) throw new Error('Inspection job not found.');
-  if (isFirebaseConfigured()) {
-    return apiRequest<InspectionJob>(existing.agencyId, `/api/v1/inspection-jobs/${inspectionJobId}/transitions`, {
-      method: 'POST',
-      body: { status, expectedVersion: (existing as VersionedInspectionJob).version ?? 1 },
-      baseVersion: (existing as VersionedInspectionJob).version ?? 1,
-      entityType: 'job',
-      entityId: inspectionJobId,
-      action: 'transition',
-      announceSuccess: true,
-    });
-  }
-  return updateInspectionJob(inspectionJobId, { status });
+  const mapping: Partial<Record<InspectionJobStatus, { command: InspectionJobCommand; body?: Record<string, unknown> }>> = {
+    assigned: { command: 'assign' },
+    inspection_started: { command: 'start-inspection' },
+    photos_uploading: { command: 'begin-photo-upload' },
+    photos_uploaded: { command: 'complete-photo-upload' },
+    inspection_submitted: { command: 'submit-fieldwork' },
+    on_hold: { command: 'hold', body: { reason: 'Placed on hold by operator.' } },
+    cancelled: { command: 'cancel', body: { reason: 'Cancelled by operator.' } },
+    draft: { command: 'reopen', body: { reason: 'Reopened by operator.' } },
+  };
+  const mapped = mapping[status];
+  if (!mapped) throw new Error(`Status ${status} must be changed by its owning report workflow.`);
+  return runInspectionJobCommand(inspectionJobId, mapped.command, mapped.body);
 };
