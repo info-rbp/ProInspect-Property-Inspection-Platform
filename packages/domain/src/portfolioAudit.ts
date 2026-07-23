@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
 import type { PortfolioAuditFinding, PortfolioAuditRunRecord } from './serviceRecords.js';
+import { stableHash } from './stableHash.js';
 
 export interface PortfolioAuditProjection {
   propertyId: string;
@@ -21,7 +21,7 @@ export class PortfolioAuditError extends Error {
 }
 
 function id(propertyId: string, category: PortfolioAuditFinding['category'], date: string): string {
-  return createHash('sha256').update(`${propertyId}|${category}|${date}`).digest('hex').slice(0, 32);
+  return stableHash({ propertyId, category, date }).slice(0, 32);
 }
 
 export function evaluatePortfolioProjection(record: PortfolioAuditProjection, asAt: Date): PortfolioAuditFinding[] {
