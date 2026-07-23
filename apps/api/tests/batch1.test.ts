@@ -40,7 +40,7 @@ class Templates implements TemplateRepository {
 const source: ReportAggregate = {
   report: {
     id: 'report-1', agencyId: 'agency-a', propertyId: 'property-1', inspectionJobId: 'job-1', reportType: 'Routine Inspection',
-    propertyAddress: '1 Test Street', lifecycleStatus: 'draft', templateId: 'wa-routine-residential-v1', templateVersion: 1,
+    propertyAddress: '1 Test Street', lifecycleStatus: 'draft', templateId: 'wa-residential-routine', templateVersion: 1,
     templateHash: 'hash', workspaceRevision: 3, schemaVersion: 2, version: 4, currentVersionId: 'version-4',
   },
   areas: [{ id: 'area-1', name: 'Entry', sequence: 1, version: 1, components: [{
@@ -112,7 +112,7 @@ describe('Batch 1 inspection product APIs', () => {
 
   it('creates and publishes an agency template draft', async () => {
     const state = dependencies();
-    const created = await request(state.deps, '/api/v1/template-library', { method: 'POST', headers, body: JSON.stringify({ sourceTemplateId: 'wa-entry-residential-v1', sourceTemplateVersion: 1, id: 'agency-entry', version: 1 }) });
+    const created = await request(state.deps, '/api/v1/template-library', { method: 'POST', headers, body: JSON.stringify({ sourceTemplateId: 'wa-residential-entry-pcr', sourceTemplateVersion: 1, id: 'agency-entry', version: 1 }) });
     expect(created.status).toBe(201);
     server?.close();
     const publishHeaders = { ...headers, 'idempotency-key': 'batch-one-request-2' };
