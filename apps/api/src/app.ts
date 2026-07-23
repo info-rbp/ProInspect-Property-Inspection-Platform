@@ -4,6 +4,7 @@ import type { AuthorisationTarget, DomainErrorShape, SecurityCapability } from '
 import { ApiError, routeApiRequest, type ApiResponse } from './backend/router.js';
 import { routeReportAggregateRequest } from './backend/reportRoutes.js';
 import { routeBatchOneReportRequest } from './backend/reportBatch1Routes.js';
+import { routeBatchThreeRequest } from './backend/batch3Routes.js';
 import { routeInspectionJobCommandRequest } from './backend/inspectionJobCommandRoutes.js';
 import { routeTemplateLibraryRequest } from './backend/templateLibraryRoutes.js';
 import { buildOpenApiDocument } from './backend/openapi.js';
@@ -68,7 +69,7 @@ function errorResponse(error: unknown, correlationId: string): ApiResponse {
     }
   }
   console.error(JSON.stringify({ level: 'error', message: 'api.unhandled_error', correlationId, error: error instanceof Error ? error.message : String(error) }));
-  return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } };
+  return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } } };
 }
 
 function resourcePath(urlValue: string | undefined, resource: string): string[] | undefined {
@@ -158,6 +159,16 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
         const reportResponse = await routeReportAggregateRequest(req, dependencies, correlationId, agencyId(req), reportId, nested);
         if (reportResponse) {
           sendResponse(reportResponse);
+          return;
+        }
+      }
+
+      for (const resource of ['evidence-packs', 'portfolio-audits', 'branding-versions']) {
+        const path = resourcePath(req.url, resource);
+        if (!path) continue;
+        const response = await routeBatchThreeRequest(req, dependencies, correlationId, agencyId(req), resource, path[0], path.slice(1));
+        if (response) {
+          sendResponse(response);
           return;
         }
       }
