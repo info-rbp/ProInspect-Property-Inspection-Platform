@@ -173,6 +173,11 @@ export interface ReportMetadataRecord {
   templateAssignment?: ReportTemplateAssignment;
   sourceReportIds?: string[];
   baselineVersionIds?: string[];
+  sourceDocumentIds?: string[];
+  importJobId?: string;
+  importManifestHash?: string;
+  importMappingVersion?: string;
+  importedBy?: string;
   qualityStatus?: ReportQualityStatus;
   latestQualityRunId?: string;
   workspaceRevision: number;
