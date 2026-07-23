@@ -186,7 +186,7 @@ const PropertiesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-950">Properties</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-600">Properties</h1>
           <p className="text-sm text-gray-600">Comprehensive property records including layout, inspections, and agency association.</p>
         </div>
         <div className="flex gap-2">
@@ -206,7 +206,7 @@ const PropertiesPage: React.FC = () => {
               setIsCreating(true);
               setIsCreatingAgency(false);
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-850 transition shadow-md"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition shadow-md"
           >
             <Plus size={16} /> Add Property
           </button>
@@ -215,79 +215,79 @@ const PropertiesPage: React.FC = () => {
 
       {/* CREATE AGENCY PANEL */}
       {isCreatingAgency && (
-        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
-          <div className="flex items-center justify-between border-b border-blue-100 pb-3 mb-4">
-            <h2 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-              <Building2 className="text-blue-600" size={20} />
+        <div className="rounded-xl border border-accent-100 bg-accent-50/50 p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="flex items-center justify-between border-b border-accent-100 pb-3 mb-4">
+            <h2 className="text-lg font-semibold text-accent-900 flex items-center gap-2">
+              <Building2 className="text-accent-600" size={20} />
               Register New Real Estate Agency
             </h2>
             <button
               type="button"
               onClick={() => { agencyDirty.markClean(); setIsCreatingAgency(false); }}
-              className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+              className="text-accent-500 hover:text-accent-700 text-sm font-medium"
             >
               Cancel
             </button>
           </div>
           <form {...agencyDirty.formProps} onSubmit={handleAgencySubmit} className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-blue-800 uppercase mb-1">Agency Name *</label>
+              <label className="block text-xs font-semibold text-accent-800 uppercase mb-1">Agency Name *</label>
               <input
                 required
                 placeholder="e.g. Century 21 Dalyellup"
                 value={agencyForm.name}
                 onChange={(e) => setAgencyForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                className="w-full rounded-lg border border-accent-200 bg-white p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-blue-800 uppercase mb-1">Trading Name</label>
+              <label className="block text-xs font-semibold text-accent-800 uppercase mb-1">Trading Name</label>
               <input
                 placeholder="e.g. C21 Real Estate"
                 value={agencyForm.tradingName}
                 onChange={(e) => setAgencyForm((prev) => ({ ...prev, tradingName: e.target.value }))}
-                className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                className="w-full rounded-lg border border-accent-200 bg-white p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-blue-800 uppercase mb-1">ABN</label>
+              <label className="block text-xs font-semibold text-accent-800 uppercase mb-1">ABN</label>
               <input
                 placeholder="e.g. 12 345 678 910"
                 value={agencyForm.abn}
                 onChange={(e) => setAgencyForm((prev) => ({ ...prev, abn: e.target.value }))}
-                className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                className="w-full rounded-lg border border-accent-200 bg-white p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-blue-800 uppercase mb-1">Contact Email</label>
+              <label className="block text-xs font-semibold text-accent-800 uppercase mb-1">Contact Email</label>
               <input
                 type="email"
                 placeholder="e.g. contact@c21dalyellup.com.au"
                 value={agencyForm.contactEmail}
                 onChange={(e) => setAgencyForm((prev) => ({ ...prev, contactEmail: e.target.value }))}
-                className="w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                className="w-full rounded-lg border border-accent-200 bg-white p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-blue-800 uppercase mb-1">Contact Phone</label>
+              <label className="block text-xs font-semibold text-accent-800 uppercase mb-1">Contact Phone</label>
               <input
                 placeholder="e.g. (08) 9721 3456"
                 value={agencyForm.contactPhone}
                 onChange={(e) => setAgencyForm((prev) => ({ ...prev, contactPhone: e.target.value }))}
-                className="max-w-md w-full rounded-lg border border-blue-200 bg-white p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                className="max-w-md w-full rounded-lg border border-accent-200 bg-white p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
               />
             </div>
-            <div className="md:col-span-2 flex gap-2 pt-2 border-t border-blue-100 mt-2">
+            <div className="md:col-span-2 flex gap-2 pt-2 border-t border-accent-100 mt-2">
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 shadow-sm transition"
+                className="rounded-lg bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-700 shadow-sm transition"
               >
                 Register Agency
               </button>
               <button
                 type="button"
                 onClick={() => { agencyDirty.markClean(); setIsCreatingAgency(false); }}
-                className="rounded-lg border border-blue-200 bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100/50 transition"
+                className="rounded-lg border border-accent-200 bg-white px-5 py-2.5 text-sm font-semibold text-accent-700 hover:bg-accent-100/50 transition"
               >
                 Cancel
               </button>
@@ -300,7 +300,7 @@ const PropertiesPage: React.FC = () => {
       {isCreating && (
         <form {...propertyDirty.formProps} onSubmit={handlePropertySubmit} className="rounded-xl border border-gray-200 bg-white p-6 shadow-md animate-in fade-in slide-in-from-top-4 duration-200 space-y-6">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-            <h2 className="text-lg font-semibold text-gray-950 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-brand-600 flex items-center gap-2">
               <Home size={20} className="text-gray-700" />
               Add Detailed Property Record
             </h2>
@@ -324,7 +324,7 @@ const PropertiesPage: React.FC = () => {
                   placeholder="e.g. 13 Laurent Wy"
                   value={form.address}
                   onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -334,7 +334,7 @@ const PropertiesPage: React.FC = () => {
                     placeholder="e.g. Dalyellup"
                     value={form.suburb}
                     onChange={(e) => setForm((prev) => ({ ...prev, suburb: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -343,7 +343,7 @@ const PropertiesPage: React.FC = () => {
                     placeholder="e.g. WA"
                     value={form.state}
                     onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
               </div>
@@ -354,7 +354,7 @@ const PropertiesPage: React.FC = () => {
                     placeholder="e.g. 6230"
                     value={form.postcode}
                     onChange={(e) => setForm((prev) => ({ ...prev, postcode: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -362,7 +362,7 @@ const PropertiesPage: React.FC = () => {
                   <select
                     value={form.propertyType}
                     onChange={(e) => setForm((prev) => ({ ...prev, propertyType: e.target.value as PropertyRecord['propertyType'] }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition capitalize bg-white"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition capitalize bg-white"
                   >
                     {propertyTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -374,7 +374,7 @@ const PropertiesPage: React.FC = () => {
                   placeholder="e.g. Oceanview Heights"
                   value={form.buildingName}
                   onChange={(e) => setForm((prev) => ({ ...prev, buildingName: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                 />
               </div>
             </div>
@@ -390,7 +390,7 @@ const PropertiesPage: React.FC = () => {
                     min="0"
                     value={form.bedrooms}
                     onChange={(e) => setForm((prev) => ({ ...prev, bedrooms: parseInt(e.target.value) || 0 }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -400,7 +400,7 @@ const PropertiesPage: React.FC = () => {
                     min="0"
                     value={form.bathrooms}
                     onChange={(e) => setForm((prev) => ({ ...prev, bathrooms: parseInt(e.target.value) || 0 }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -410,7 +410,7 @@ const PropertiesPage: React.FC = () => {
                     min="0"
                     value={form.parking}
                     onChange={(e) => setForm((prev) => ({ ...prev, parking: parseInt(e.target.value) || 0 }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
               </div>
@@ -421,7 +421,7 @@ const PropertiesPage: React.FC = () => {
                     placeholder="e.g. LAUR13"
                     value={form.propertyCode}
                     onChange={(e) => setForm((prev) => ({ ...prev, propertyCode: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -430,7 +430,7 @@ const PropertiesPage: React.FC = () => {
                     placeholder="e.g. Admin Team"
                     value={form.propertyManager}
                     onChange={(e) => setForm((prev) => ({ ...prev, propertyManager: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                   />
                 </div>
               </div>
@@ -440,7 +440,7 @@ const PropertiesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsCreatingAgency(true)}
-                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+                    className="text-xs text-accent-600 hover:text-accent-800 hover:underline font-semibold"
                   >
                     + Register Agency
                   </button>
@@ -448,7 +448,7 @@ const PropertiesPage: React.FC = () => {
                 <select
                   value={form.realEstateAgencyId}
                   onChange={(e) => setForm((prev) => ({ ...prev, realEstateAgencyId: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition bg-white"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition bg-white"
                 >
                   <option value="">-- No agency linked --</option>
                   {agencies.map((agency) => (
@@ -463,7 +463,7 @@ const PropertiesPage: React.FC = () => {
                 <select
                   value={form.inspectionInterval}
                   onChange={(e) => setForm((prev) => ({ ...prev, inspectionInterval: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition bg-white"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition bg-white"
                 >
                   <option value="1 Month">1 Month</option>
                   <option value="2 Months">2 Months</option>
@@ -484,7 +484,7 @@ const PropertiesPage: React.FC = () => {
                     type="date"
                     value={form.inspectionDue}
                     onChange={(e) => setForm((prev) => ({ ...prev, inspectionDue: e.target.value }))}
-                    className="w-full rounded border border-gray-300 p-1.5 text-xs focus:border-blue-500 outline-none transition"
+                    className="w-full rounded border border-gray-300 p-1.5 text-xs focus:border-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -493,7 +493,7 @@ const PropertiesPage: React.FC = () => {
                     type="date"
                     value={form.nextInspection}
                     onChange={(e) => setForm((prev) => ({ ...prev, nextInspection: e.target.value }))}
-                    className="w-full rounded border border-gray-300 p-1.5 text-xs focus:border-blue-500 outline-none transition"
+                    className="w-full rounded border border-gray-300 p-1.5 text-xs focus:border-accent-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -502,7 +502,7 @@ const PropertiesPage: React.FC = () => {
                     type="date"
                     value={form.lastInspection}
                     onChange={(e) => setForm((prev) => ({ ...prev, lastInspection: e.target.value }))}
-                    className="w-full rounded border border-gray-300 p-1.5 text-xs focus:border-blue-500 outline-none transition"
+                    className="w-full rounded border border-gray-300 p-1.5 text-xs focus:border-accent-500 outline-none transition"
                   />
                 </div>
               </div>
@@ -516,7 +516,7 @@ const PropertiesPage: React.FC = () => {
                   onDragLeave={handleDrag}
                   onDrop={handleDrop}
                   className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition ${
-                    dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'
+                    dragActive ? 'border-accent-500 bg-accent-50' : 'border-gray-300 hover:border-accent-500'
                   }`}
                   onClick={() => document.getElementById('photo-upload-input')?.click()}
                 >
@@ -537,7 +537,7 @@ const PropertiesPage: React.FC = () => {
                   ) : (
                     <div className="text-gray-500 space-y-1">
                       <ImageIcon size={24} className="mx-auto text-gray-400" />
-                      <p className="text-xs font-medium text-blue-600">Upload property photo</p>
+                      <p className="text-xs font-medium text-accent-600">Upload property photo</p>
                       <p className="text-[10px] text-gray-400">Supports drag and drop or manual click</p>
                     </div>
                   )}
@@ -551,7 +551,7 @@ const PropertiesPage: React.FC = () => {
                   placeholder="Enter property notes, water usage consents, special requirements..."
                   value={form.notes}
                   onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-accent-500 focus:ring-1 focus:ring-accent-500 outline-none transition"
                 />
               </div>
             </div>
@@ -561,7 +561,7 @@ const PropertiesPage: React.FC = () => {
             <button
               id="create-property-detailed-submit-btn"
               type="submit"
-              className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 shadow-md transition-all flex items-center gap-2"
+              className="rounded-lg bg-accent-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-accent-700 shadow-md transition-all flex items-center gap-2"
             >
               <Sparkles size={16} /> Create Property
             </button>
@@ -613,7 +613,7 @@ const PropertiesPage: React.FC = () => {
                         <div>
                           <Link
                             to={`/app/admin/properties/${property.id}`}
-                            className="font-semibold text-gray-950 hover:text-blue-600 hover:underline transition"
+                            className="font-semibold text-brand-600 hover:text-accent-600 hover:underline transition"
                           >
                             {property.address}
                           </Link>
@@ -658,7 +658,7 @@ const PropertiesPage: React.FC = () => {
                     <td className="p-4 text-right">
                       <Link
                         to={`/app/admin/properties/${property.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-accent-600 hover:text-accent-800 hover:underline"
                       >
                         <Eye size={12} /> View details
                       </Link>

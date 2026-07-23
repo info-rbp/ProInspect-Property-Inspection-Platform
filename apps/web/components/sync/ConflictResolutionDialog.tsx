@@ -39,7 +39,7 @@ const ConflictResolutionDialog: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-600/60 p-4" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
       <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
         <h2 id="conflict-title" className="text-lg font-bold">Resolve synchronisation conflict</h2>
         <p className="mt-2 text-sm text-gray-600">The server has version {conflict.serverVersion} of this {conflict.entityType}. Choose how to preserve the work.</p>

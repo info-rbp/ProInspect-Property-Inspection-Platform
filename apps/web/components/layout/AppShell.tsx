@@ -108,12 +108,12 @@ const AppShell: React.FC = () => {
   }, [mobileNavigationOpen, setMobileNavigationOpen]);
 
   return (
-    <div onClickCapture={protectDirtyLinkNavigation} className="min-h-screen bg-gray-50 text-gray-950 lg:grid lg:grid-cols-[260px_1fr]">
-      <a href="#main-content" className="sr-only z-[100] rounded bg-gray-950 px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
+    <div onClickCapture={protectDirtyLinkNavigation} className="min-h-screen bg-gray-50 text-brand-600 lg:grid lg:grid-cols-[260px_1fr]">
+      <a href="#main-content" className="sr-only z-[100] rounded bg-brand-600 px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
       <div className="hidden lg:block"><Sidebar /></div>
       {mobileNavigationOpen ? (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Application navigation">
-          <button type="button" className="absolute inset-0 bg-gray-950/50" onClick={() => setMobileNavigationOpen(false)} aria-label="Dismiss navigation backdrop" />
+          <button type="button" className="absolute inset-0 bg-brand-600/50" onClick={() => setMobileNavigationOpen(false)} aria-label="Dismiss navigation backdrop" />
           <div ref={drawerRef} className="relative h-full w-[min(20rem,88vw)] shadow-2xl"><Sidebar mobile /></div>
         </div>
       ) : null}
