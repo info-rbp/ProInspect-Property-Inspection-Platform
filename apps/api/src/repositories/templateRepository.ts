@@ -18,6 +18,10 @@ function validLifecycle(existing: InspectionTypeTemplate | undefined, next: Insp
   return next.status === 'retired';
 }
 
+function persistedTemplate(template: InspectionTypeTemplate): InspectionTypeTemplate {
+  return JSON.parse(JSON.stringify(template)) as InspectionTypeTemplate;
+}
+
 export class FirestoreTemplateRepository implements TemplateRepository {
   constructor(private readonly agencyId: string, private readonly actorId = 'system') {}
 
@@ -29,44 +33,45 @@ export class FirestoreTemplateRepository implements TemplateRepository {
   async save(template: InspectionTypeTemplate): Promise<void> {
     const database = getFirestore(adminApp());
     const reference = templateRef(this.agencyId, template.id, template.version);
+    const record = persistedTemplate(template);
     await database.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       const existing = snapshot.exists ? snapshot.data() as InspectionTypeTemplate : undefined;
-      if (!validLifecycle(existing, template)) {
+      if (!validLifecycle(existing, record)) {
         throw Object.assign(new Error('Template lifecycle transition is not permitted.'), {
           code: existing && existing.status !== 'draft' ? 'TEMPLATE_IMMUTABLE' : 'TEMPLATE_STATE_CONFLICT',
           status: 409,
-          details: { from: existing?.status ?? null, to: template.status },
+          details: { from: existing?.status ?? null, to: record.status },
         });
       }
-      if (existing?.status === 'published' && template.status === 'published' && JSON.stringify(existing) !== JSON.stringify(template)) {
+      if (existing?.status === 'published' && record.status === 'published' && JSON.stringify(existing) !== JSON.stringify(record)) {
         throw Object.assign(new Error('Published template content is immutable.'), { code: 'TEMPLATE_IMMUTABLE', status: 409 });
       }
       const timestamp = new Date().toISOString();
-      transaction.set(reference, structuredClone(template));
-      transaction.set(database.doc(`agencies/${this.agencyId}/templates/${template.id}`), {
-        id: template.id,
+      transaction.set(reference, record);
+      transaction.set(database.doc(`agencies/${this.agencyId}/templates/${record.id}`), {
+        id: record.id,
         agencyId: this.agencyId,
-        inspectionType: template.inspectionType,
-        jurisdiction: template.jurisdiction ?? null,
-        status: template.status,
-        ...(template.status === 'published' ? { currentPublishedVersion: template.version } : {}),
+        inspectionType: record.inspectionType,
+        jurisdiction: record.jurisdiction ?? null,
+        status: record.status,
+        ...(record.status === 'published' ? { currentPublishedVersion: record.version } : {}),
         updatedAt: timestamp,
         updatedBy: this.actorId,
       }, { merge: true });
-      if (template.status === 'published' && existing?.status !== 'published') {
-        const eventId = `${template.id}-${template.version}-published`;
+      if (record.status === 'published' && existing?.status !== 'published') {
+        const eventId = `${record.id}-${record.version}-published`;
         transaction.set(database.doc(`agencies/${this.agencyId}/outboxEvents/${eventId}`), {
           id: eventId, agencyId: this.agencyId, eventType: 'template.published', aggregateType: 'template',
-          aggregateId: template.id, aggregateVersion: template.version, payload: { templateId: template.id, version: template.version, contentHash: template.contentHash ?? null },
+          aggregateId: record.id, aggregateVersion: record.version, payload: { templateId: record.id, version: record.version, contentHash: record.contentHash ?? null },
           correlationId: eventId, status: 'pending', attempt: 0, availableAt: timestamp, createdAt: timestamp,
         });
       }
-      if (template.status === 'retired' && existing?.status === 'published') {
-        const eventId = `${template.id}-${template.version}-retired`;
+      if (record.status === 'retired' && existing?.status === 'published') {
+        const eventId = `${record.id}-${record.version}-retired`;
         transaction.set(database.doc(`agencies/${this.agencyId}/outboxEvents/${eventId}`), {
           id: eventId, agencyId: this.agencyId, eventType: 'template.retired', aggregateType: 'template',
-          aggregateId: template.id, aggregateVersion: template.version, payload: { templateId: template.id, version: template.version },
+          aggregateId: record.id, aggregateVersion: record.version, payload: { templateId: record.id, version: record.version },
           correlationId: eventId, status: 'pending', attempt: 0, availableAt: timestamp, createdAt: timestamp,
         });
       }
