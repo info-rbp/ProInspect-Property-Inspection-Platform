@@ -29,6 +29,7 @@ export const ROUTE_POLICIES: Record<string, RoutePolicy> = {
   templates: { collection: 'templates', readCapability: 'report.read', writeCapability: 'template.manage', target },
   'report-versions': { collection: 'reportVersions', readCapability: 'report.read', writeCapability: 'report.edit', target },
   uploads: { collection: 'uploadSessions', readCapability: 'report.read', writeCapability: 'upload.create', target },
+  'photo-evidence': { collection: 'photoEvidence', readCapability: 'report.read', target },
   'analysis-jobs': { collection: 'analysisJobs', readCapability: 'report.read', writeCapability: 'analysis.create', target },
   'analysis-results': { collection: 'analysisResults', readCapability: 'report.read', target },
   'pdf-jobs': { collection: 'pdfJobs', readCapability: 'report.read', writeCapability: 'pdf.create', target },
