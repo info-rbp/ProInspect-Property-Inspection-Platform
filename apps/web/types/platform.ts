@@ -11,15 +11,8 @@ export type UserRole =
   | 'landlord'
   | 'shopify_customer';
 
-export type EntityStatus = 'active' | 'inactive' | 'archived';
+export type EntityStatus = 'active' | 'inactive' | 'archived' | 'invited' | 'suspended' | 'revoked';
 
-/**
- * The five report types supported by the shared inspection product model.
- *
- * Entry, Routine and Exit are the first-release field-inspection modules.
- * Comparison and Maintenance are recognised by the domain now and are
- * completed as operational modules during Phase 2.
- */
 export const INSPECTION_REPORT_TYPES = [
   'Property Condition Report',
   'Routine Inspection',
@@ -31,65 +24,20 @@ export const INSPECTION_REPORT_TYPES = [
 export type InspectionReportType = (typeof INSPECTION_REPORT_TYPES)[number];
 
 export type InspectionJobStatus =
-  | 'draft'
-  | 'booked'
-  | 'assigned'
-  | 'inspection_started'
-  | 'photos_uploading'
-  | 'photos_uploaded'
-  | 'inspection_submitted'
-  | 'analysis_queued'
-  | 'analysis_running'
-  | 'analysis_failed'
-  | 'analysis_complete'
-  | 'analyst_review_in_progress'
-  | 'review_required'
-  | 'reviewer_review_in_progress'
-  | 'changes_requested'
-  | 'reviewer_approved'
-  | 'ready_to_issue'
-  | 'issued_to_tenant'
-  | 'tenant_viewed'
-  | 'tenant_response_in_progress'
-  | 'tenant_submitted'
-  | 'agent_response_required'
-  | 'finalisation_ready'
-  | 'finalised'
-  | 'archived'
-  | 'on_hold'
-  | 'cancelled';
+  | 'draft' | 'booked' | 'assigned' | 'inspection_started' | 'photos_uploading' | 'photos_uploaded'
+  | 'inspection_submitted' | 'analysis_queued' | 'analysis_running' | 'analysis_failed' | 'analysis_complete'
+  | 'analyst_review_in_progress' | 'review_required' | 'reviewer_review_in_progress' | 'changes_requested'
+  | 'reviewer_approved' | 'ready_to_issue' | 'issued_to_tenant' | 'tenant_viewed'
+  | 'tenant_response_in_progress' | 'tenant_submitted' | 'agent_response_required' | 'finalisation_ready'
+  | 'finalised' | 'archived' | 'on_hold' | 'cancelled';
 
 export type ReportLifecycleStatus =
-  | 'draft'
-  | 'internal_review'
-  | 'photos_uploaded'
-  | 'analysis_queued'
-  | 'analysis_running'
-  | 'analysis_complete'
-  | 'review_required'
-  | 'changes_requested'
-  | 'approved_for_issue'
-  | 'issued_to_tenant'
-  | 'tenant_response_in_progress'
-  | 'tenant_submitted'
-  | 'agent_response_required'
-  | 'finalisation_ready'
-  | 'finalised'
-  | 'archived'
-  | 'cancelled';
+  | 'draft' | 'internal_review' | 'photos_uploaded' | 'analysis_queued' | 'analysis_running' | 'analysis_complete'
+  | 'review_required' | 'changes_requested' | 'approved_for_issue' | 'issued_to_tenant'
+  | 'tenant_response_in_progress' | 'tenant_submitted' | 'agent_response_required' | 'finalisation_ready'
+  | 'finalised' | 'archived' | 'cancelled';
 
-/**
- * Stage-specific operational conditions. These do not replace the durable
- * lifecycle state. For example, an archive failure leaves a report finalised
- * until archival succeeds.
- */
-export type WorkflowExceptionCode =
-  | 'evidence_upload_failed'
-  | 'analysis_failed'
-  | 'issue_failed'
-  | 'notification_failed'
-  | 'finalisation_failed'
-  | 'archive_failed';
+export type WorkflowExceptionCode = 'evidence_upload_failed' | 'analysis_failed' | 'issue_failed' | 'notification_failed' | 'finalisation_failed' | 'archive_failed';
 
 export interface Agency {
   id: string;
@@ -98,7 +46,15 @@ export interface Agency {
   abn?: string;
   contactEmail?: string;
   contactPhone?: string;
+  timezone?: string;
+  jurisdiction?: string;
+  reportSenderName?: string;
+  reportSenderEmail?: string;
+  defaultInspectionDurationMinutes?: number;
+  retentionPolicyId?: string;
+  brandingVersionId?: string;
   status: EntityStatus;
+  version?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -110,8 +66,36 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   status: EntityStatus;
+  mfaRequired?: boolean;
+  mfaEnrolled?: boolean;
+  lastSessionRevokedAt?: string;
+  version?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserInvitation {
+  id: string;
+  agencyId: string;
+  email: string;
+  role: UserRole;
+  status: 'draft' | 'sent' | 'accepted' | 'expired' | 'revoked';
+  expiresAt: string;
+  invitedBy: string;
+  acceptedByUid?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserWorkloadProjection {
+  userId: string;
+  activeJobs: number;
+  overdueJobs: number;
+  reportsAwaitingAction: number;
+  nextAssignmentAt?: string;
+  unavailableUntil?: string;
+  conflictingAssignmentIds: string[];
 }
 
 export interface Client {
@@ -123,6 +107,7 @@ export interface Client {
   type: 'landlord' | 'agency' | 'owner' | 'other';
   shopifyCustomerId?: string;
   status: EntityStatus;
+  version?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,9 +126,9 @@ export interface PropertyRecord {
   clientIds: string[];
   googleDriveFolderId?: string;
   status: EntityStatus;
+  version?: number;
   createdAt: string;
   updatedAt: string;
-  // Extended fields for Properties detail layout
   propertyCode?: string;
   propertyManager?: string;
   buildingName?: string;
@@ -166,6 +151,7 @@ export interface Tenancy {
   leaseStartDate?: string;
   leaseEndDate?: string;
   status: EntityStatus;
+  version?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -210,19 +196,7 @@ export interface ReportIndex {
 export interface AuditEvent {
   id: string;
   agencyId?: string;
-  entityType:
-    | 'agency'
-    | 'user'
-    | 'property'
-    | 'client'
-    | 'tenancy'
-    | 'inspection_job'
-    | 'report'
-    | 'area'
-    | 'component'
-    | 'photo'
-    | 'template'
-    | 'system';
+  entityType: 'agency' | 'user' | 'property' | 'client' | 'tenancy' | 'inspection_job' | 'report' | 'area' | 'component' | 'photo' | 'template' | 'system';
   entityId: string;
   eventType: string;
   actorId?: string;
