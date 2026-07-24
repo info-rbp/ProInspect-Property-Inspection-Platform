@@ -7,7 +7,9 @@ import {
   COMPONENT_TESTING_METHODS,
   COMPONENT_VISIBILITY_STATES,
   COMPONENT_WORKING_STATUSES,
+  EXCEPTIONAL_REPORT_REASON_CODES,
   REPORT_EVIDENCE_PURPOSES,
+  REPORT_ORIGINS,
   type ReportAggregate,
 } from '@pcr/domain';
 import type { ValidationResult, ValidationSchema } from './index.js';
@@ -21,6 +23,8 @@ const testingMethods = new Set<string>(COMPONENT_TESTING_METHODS);
 const reviews = new Set<string>(COMPONENT_REVIEW_STATUSES);
 const comparisons = new Set<string>(COMPONENT_COMPARISON_STATUSES);
 const evidencePurposes = new Set<string>(REPORT_EVIDENCE_PURPOSES);
+const reportOrigins = new Set<string>(REPORT_ORIGINS);
+const exceptionalReasons = new Set<string>(EXCEPTIONAL_REPORT_REASON_CODES);
 
 function failure(message: string, field: string): ValidationResult<never> {
   return { ok: false, error: { code: 'VALIDATION_ERROR', message, status: 400, details: { field } } };
@@ -65,6 +69,46 @@ function assertNoBinary(value: unknown, path = 'aggregate'): ValidationResult<tr
   return { ok: true, value: true };
 }
 
+function validateReportAuthority(report: Record<string, unknown>): ValidationResult<true> {
+  for (const field of ['id', 'agencyId', 'origin', 'propertyId', 'reportType', 'propertyAddress', 'lifecycleStatus', 'templateId', 'templateHash', 'createdBy', 'createdAt']) {
+    const result = string(report[field], `report.${field}`);
+    if (!result.ok) return result;
+  }
+  const origin = enumValue(report.origin, reportOrigins, 'report.origin');
+  if (!origin.ok) return origin;
+  const templateVersion = positiveInteger(report.templateVersion, 'report.templateVersion');
+  if (!templateVersion.ok) return templateVersion;
+  const assignment = object(report.templateAssignment, 'report.templateAssignment');
+  if (!assignment.ok) return assignment;
+  for (const field of ['templateId', 'templateHash', 'assignedAt', 'assignedBy']) {
+    const result = string(assignment.value[field], `report.templateAssignment.${field}`);
+    if (!result.ok) return result;
+  }
+  const assignmentVersion = positiveInteger(assignment.value.templateVersion, 'report.templateAssignment.templateVersion');
+  if (!assignmentVersion.ok) return assignmentVersion;
+  if (assignment.value.immutable !== true) return failure('templateAssignment must be immutable.', 'report.templateAssignment.immutable');
+  if (assignment.value.templateId !== report.templateId || assignment.value.templateVersion !== report.templateVersion || assignment.value.templateHash !== report.templateHash) {
+    return failure('Template assignment must match canonical report template metadata.', 'report.templateAssignment');
+  }
+  if (origin.value === 'inspection_booking') {
+    for (const field of ['inspectionJobId', 'bookingCommandId']) {
+      const result = string(report[field], `report.${field}`);
+      if (!result.ok) return result;
+    }
+    if (!['entry', 'routine', 'exit'].includes(String(report.inspectionType))) {
+      return failure('Inspection-booking reports require entry, routine or exit inspectionType.', 'report.inspectionType');
+    }
+  }
+  if (origin.value === 'exceptional_manual') {
+    const reasonCode = enumValue(report.exceptionalReasonCode, exceptionalReasons, 'report.exceptionalReasonCode');
+    if (!reasonCode.ok) return reasonCode;
+    const reason = string(report.exceptionalReason, 'report.exceptionalReason');
+    if (!reason.ok) return reason;
+    if (report.inspectionJobId !== undefined) return failure('Exceptional reports cannot be linked to an inspection job.', 'report.inspectionJobId');
+  }
+  return { ok: true, value: true };
+}
+
 export const reportAggregateSchema: ValidationSchema<ReportAggregate> = {
   parse(value) {
     const aggregate = object(value, 'aggregate');
@@ -74,10 +118,8 @@ export const reportAggregateSchema: ValidationSchema<ReportAggregate> = {
 
     const report = object(aggregate.value.report, 'report');
     if (!report.ok) return report;
-    for (const field of ['id', 'agencyId', 'reportType', 'propertyAddress', 'lifecycleStatus']) {
-      const result = string(report.value[field], `report.${field}`);
-      if (!result.ok) return result;
-    }
+    const authority = validateReportAuthority(report.value);
+    if (!authority.ok) return authority;
     if (!Array.isArray(aggregate.value.areas)) return failure('areas must be an array.', 'areas');
 
     const sequences = new Set<number>();
