@@ -12,6 +12,7 @@ export * from './scaleRules.js';
 export * from './portfolioAudit.js';
 export * from './evidencePack.js';
 export * from './brandingLifecycle.js';
+export * from './administration.js';
 
 export interface DomainErrorShape {
   code: string;

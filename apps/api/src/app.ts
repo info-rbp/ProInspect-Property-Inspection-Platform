@@ -8,6 +8,7 @@ import { routeBatchOneReportRequest } from './backend/reportBatch1Routes.js';
 import { routeBatchThreeRequest } from './backend/batch3Routes.js';
 import { routeInspectionJobCommandRequest } from './backend/inspectionJobCommandRoutes.js';
 import { routeTemplateLibraryRequest } from './backend/templateLibraryRoutes.js';
+import { routeAdministrationRequest } from './backend/administrationRoutes.js';
 import { buildOpenApiDocument } from './backend/openapi.js';
 import type { ApiDependencies } from './backend/types.js';
 import { authenticateAndAuthorise, SecurityError } from './security/authoriseRequest.js';
@@ -130,6 +131,15 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
         return;
       }
 
+      const administrationPath = resourcePath(req.url, 'administration');
+      if (administrationPath) {
+        const response = await routeAdministrationRequest(req, dependencies, correlationId, agencyId(req), administrationPath);
+        if (response) {
+          sendResponse(response);
+          return;
+        }
+      }
+
       const templatePath = resourcePath(req.url, 'template-library');
       if (templatePath) {
         const response = await routeTemplateLibraryRequest(req, dependencies, correlationId, agencyId(req), templatePath);
@@ -150,9 +160,7 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
 
       const reportPath = resourcePath(req.url, 'reports');
       if (reportPath) {
-        if (req.method === 'POST' && reportPath.length === 0) {
-          throw new ApiError(410, 'GENERIC_REPORT_CREATION_DISABLED', 'Book an inspection or use a controlled report command.');
-        }
+        if (req.method === 'POST' && reportPath.length === 0) throw new ApiError(410, 'GENERIC_REPORT_CREATION_DISABLED', 'Book an inspection or use a controlled report command.');
         const exceptionalResponse = await routeExceptionalReportRequest(req, dependencies, correlationId, agencyId(req), reportPath);
         if (exceptionalResponse) {
           sendResponse(exceptionalResponse);
