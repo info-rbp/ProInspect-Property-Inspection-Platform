@@ -514,7 +514,7 @@ const PropertyDetailPage: React.FC = () => {
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 rounded-xl bg-ink-900 px-4 py-3 text-sm font-semibold text-white shadow-xl flex items-center gap-2 border border-ink-800 animate-in fade-in slide-in-from-bottom-5 duration-200">
-          <CheckCircle className="text-green-400" size={18} />
+          <CheckCircle className="text-emerald-400" size={18} />
           {toastMessage}
         </div>
       )}
@@ -764,7 +764,7 @@ const PropertyDetailPage: React.FC = () => {
 
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-gray-500 flex items-center gap-1.5">
-                        <CheckCircle size={14} className="text-green-500" /> Last Inspection:
+                        <CheckCircle size={14} className="text-emerald-500" /> Last Inspection:
                       </span>
                       <span className="font-bold text-brand-600">
                         {formatPresentationDateTime(property.lastInspection, 'Fri, 24/04/2026 12:58 PM')}
@@ -848,7 +848,7 @@ const PropertyDetailPage: React.FC = () => {
                           <td className="p-3 font-semibold text-ink-900">
                             <div className="flex items-center gap-2">
                               <span className={`w-2 h-3.5 rounded ${
-                                job.reportType.includes('Routine') ? 'bg-accent-500' : job.reportType.includes('Entry') ? 'bg-green-500' : 'bg-amber-500'
+                                job.reportType.includes('Routine') ? 'bg-accent-500' : job.reportType.includes('Entry') ? 'bg-emerald-500' : 'bg-amber-500'
                               }`} />
                               <span>{job.reportType}</span>
                             </div>
@@ -1107,7 +1107,7 @@ const PropertyDetailPage: React.FC = () => {
                   {tenancies.map((tenancy) => (
                     <div key={tenancy.id} className="rounded-xl border border-gray-200 bg-gray-50/50 p-5 space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 border border-green-200 capitalize">
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200 capitalize">
                           {tenancy.status}
                         </span>
                         <div className="text-xs text-gray-500">

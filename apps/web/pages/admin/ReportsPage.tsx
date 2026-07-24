@@ -19,7 +19,7 @@ const ReportsPage: React.FC = () => {
           <p className="text-sm text-gray-600">Canonical reports created from inspection bookings or controlled historical workflows.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/app/admin/inspection-jobs" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
+          <Link to="/app/admin/inspection-jobs" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
             <CalendarPlus size={16} /> Book inspection
           </Link>
           <Link to="/app/admin/operations/imports" className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
@@ -28,7 +28,7 @@ const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+      <div className="rounded-lg border border-accent-200 bg-accent-50 p-4 text-sm text-accent-900">
         Ordinary Entry, Routine and Exit reports are created by booking an inspection. Exceptional records require an administrator command with a recorded reason and published template.
       </div>
 

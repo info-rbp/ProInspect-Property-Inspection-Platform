@@ -56,4 +56,14 @@ const router = createBrowserRouter(createRoutesFromElements(
 ));
 
 const App: React.FC = () => <AuthProvider><ShellProvider><React.Suspense fallback={<div role="status" className="grid min-h-screen place-items-center bg-stone-50 text-sm font-bold text-stone-600">Loading ProInspect…</div>}><RouterProvider router={router} /></React.Suspense></ShellProvider></AuthProvider>;
+const App: React.FC = () => (
+  <AuthProvider>
+    <ShellProvider>
+      <React.Suspense fallback={<div role="status" className="grid min-h-screen place-items-center bg-ink-50 text-sm font-bold text-ink-600">Loading ProInspect…</div>}>
+        <RouterProvider router={router} />
+      </React.Suspense>
+    </ShellProvider>
+  </AuthProvider>
+);
+
 export default App;
