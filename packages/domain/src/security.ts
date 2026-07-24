@@ -5,6 +5,7 @@ export const SECURITY_CAPABILITIES = [
   'agency.manage',
   'user.invite',
   'user.suspend',
+  'user.role.change',
   'property.read',
   'property.manage',
   'tenancy.read',
