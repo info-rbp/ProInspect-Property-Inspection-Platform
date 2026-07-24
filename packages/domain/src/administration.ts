@@ -20,7 +20,7 @@ export interface UserInvitation {
   updatedAt: string;
 }
 
-export interface AgencyMembership {
+export interface AdministrationMembershipRecord {
   id: string;
   uid: string;
   agencyId: string;
