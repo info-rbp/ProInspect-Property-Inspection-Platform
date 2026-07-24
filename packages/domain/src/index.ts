@@ -1,6 +1,7 @@
 export * from './platform.js';
 export * from './security.js';
 export * from './reportModel.js';
+export * from './reportOrigin.js';
 export * from './photoEvidence.js';
 export * from './workflow.js';
 export * from './operations.js';
