@@ -1,104 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
-import type { PropertyRecord, ReportIndex } from '../../types/platform';
-import type { ReportData } from '../../types';
-import { listProperties } from '../../services/platform/propertyService';
-import { listReportIndexes, upsertReportIndexFromReport } from '../../services/platform/reportIndexService';
-import { DEFAULT_AGENCY_ID } from '../../services/platform/userProfileService';
-import { saveReportToDB } from '../../services/storageService';
-import { generateId } from '../../utils';
-import { useDirtyForm } from '../../hooks/useDirtyForm';
-
-const reportTypes = ['Property Condition Report', 'Routine Inspection', 'Exit Inspection'];
+import { Link } from 'react-router-dom';
+import { CalendarPlus, FileInput } from 'lucide-react';
+import type { ReportIndex } from '../../types/platform';
+import { listReportIndexes } from '../../services/platform/reportIndexService';
 
 const ReportsPage: React.FC = () => {
-  const navigate = useNavigate();
   const [reports, setReports] = useState<ReportIndex[]>([]);
-  const [properties, setProperties] = useState<PropertyRecord[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
-  const [form, setForm] = useState({
-    propertyId: '',
-    reportType: 'Property Condition Report',
-    inspectionDate: new Date().toISOString().split('T')[0],
-    tenantName: '',
-    clientName: '',
-  });
-  const dirtyForm = useDirtyForm({ scopeId: 'report:new', entityType: 'report' });
-
-  const loadData = async () => {
-    const [nextReports, nextProperties] = await Promise.all([listReportIndexes(), listProperties()]);
-    setReports(nextReports);
-    setProperties(nextProperties);
-    setForm((prev) => ({ ...prev, propertyId: prev.propertyId || nextProperties[0]?.id || '' }));
-  };
 
   useEffect(() => {
-    loadData();
+    void listReportIndexes().then(setReports);
   }, []);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const property = properties.find((candidate) => candidate.id === form.propertyId);
-    const report: ReportData = {
-      id: generateId(),
-      agencyId: DEFAULT_AGENCY_ID,
-      propertyId: form.propertyId || undefined,
-      lifecycleStatus: 'draft',
-      propertyAddress: property?.address || '',
-      agentName: 'Admin Team',
-      agentCompany: 'ProInspect',
-      agentAddress: 'Perth, WA',
-      agentPhone: '0400 000 000',
-      agentEmail: 'inspections@proinspect.com.au',
-      clientName: form.clientName,
-      inspectionDate: form.inspectionDate,
-      tenantName: form.tenantName,
-      reportType: form.reportType,
-      rooms: [],
-    };
-
-    const savedReport = await saveReportToDB(report, 'report:new');
-    await upsertReportIndexFromReport(savedReport);
-    setIsCreating(false);
-    await loadData();
-    navigate(`/app/admin/reports/${savedReport.id}/edit`);
-  };
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-bold text-brand-600">Reports</h1>
-          <p className="text-sm text-gray-600">Report indexes linked to full inspection report payloads.</p>
+          <p className="text-sm text-gray-600">Canonical reports created from inspection bookings or controlled historical workflows.</p>
         </div>
-        <button type="button" onClick={() => setIsCreating(true)} className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
-          <Plus size={16} /> Create report
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/app/admin/inspection-jobs" className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
+            <CalendarPlus size={16} /> Book inspection
+          </Link>
+          <Link to="/app/admin/operations/imports" className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+            <FileInput size={16} /> Import historical report
+          </Link>
+        </div>
       </div>
 
-      {isCreating && (
-        <form {...dirtyForm.formProps} onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-3">
-          <select value={form.propertyId} onChange={(event) => setForm((prev) => ({ ...prev, propertyId: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm">
-            <option value="">No property selected</option>
-            {properties.map((property) => <option key={property.id} value={property.id}>{property.address}</option>)}
-          </select>
-          <select value={form.reportType} onChange={(event) => setForm((prev) => ({ ...prev, reportType: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm">
-            {reportTypes.map((reportType) => <option key={reportType} value={reportType}>{reportType}</option>)}
-          </select>
-          <input type="date" value={form.inspectionDate} onChange={(event) => setForm((prev) => ({ ...prev, inspectionDate: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
-          <input placeholder="Tenant names" value={form.tenantName} onChange={(event) => setForm((prev) => ({ ...prev, tenantName: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
-          <input placeholder="Client / landlord" value={form.clientName} onChange={(event) => setForm((prev) => ({ ...prev, clientName: event.target.value }))} className="rounded-lg border border-gray-300 p-2 text-sm" />
-          <div className="flex gap-2">
-            <button type="submit" className="rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-700">Create</button>
-            <button type="button" onClick={() => { dirtyForm.markClean(); setIsCreating(false); }} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
-          </div>
-        </form>
-      )}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        Ordinary Entry, Routine and Exit reports are created by booking an inspection. Exceptional records require an administrator command with a recorded reason and published template.
+      </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         {reports.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">No reports yet. Create a report or save from the report builder.</div>
+          <div className="p-8 text-center text-sm text-gray-500">No reports yet. Book an inspection or import a historical record.</div>
         ) : (
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">

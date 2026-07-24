@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { AuthorisationTarget, DomainErrorShape, SecurityCapability } from '@pcr/domain';
 import { ApiError, routeApiRequest, type ApiResponse } from './backend/router.js';
 import { routeReportAggregateRequest } from './backend/reportRoutes.js';
+import { routeExceptionalReportRequest } from './backend/exceptionalReportRoutes.js';
 import { routeBatchOneReportRequest } from './backend/reportBatch1Routes.js';
 import { routeBatchThreeRequest } from './backend/batch3Routes.js';
 import { routeInspectionJobCommandRequest } from './backend/inspectionJobCommandRoutes.js';
@@ -69,7 +70,7 @@ function errorResponse(error: unknown, correlationId: string): ApiResponse {
     }
   }
   console.error(JSON.stringify({ level: 'error', message: 'api.unhandled_error', correlationId, error: error instanceof Error ? error.message : String(error) }));
-  return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } } };
+  return { status: 500, body: { error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.', status: 500, correlationId } };
 }
 
 function resourcePath(urlValue: string | undefined, resource: string): string[] | undefined {
@@ -149,6 +150,14 @@ export function createRequestHandler(dependencies: ApiDependencies = createSecur
 
       const reportPath = resourcePath(req.url, 'reports');
       if (reportPath) {
+        if (req.method === 'POST' && reportPath.length === 0) {
+          throw new ApiError(410, 'GENERIC_REPORT_CREATION_DISABLED', 'Book an inspection or use a controlled report command.');
+        }
+        const exceptionalResponse = await routeExceptionalReportRequest(req, dependencies, correlationId, agencyId(req), reportPath);
+        if (exceptionalResponse) {
+          sendResponse(exceptionalResponse);
+          return;
+        }
         const reportId = reportPath[0];
         const nested = reportPath.slice(1);
         const batchOneResponse = await routeBatchOneReportRequest(req, dependencies, correlationId, agencyId(req), reportId, nested);
