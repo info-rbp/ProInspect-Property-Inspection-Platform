@@ -34,6 +34,16 @@ export interface ReportAuthorityMetadata {
   sourceDocumentIds?: string[];
 }
 
+declare module './reportModel.js' {
+  interface ReportMetadataRecord {
+    origin?: ReportOrigin;
+    createdBy?: string;
+    bookingCommandId?: string;
+    exceptionalReasonCode?: ExceptionalReportReasonCode;
+    exceptionalReason?: string;
+  }
+}
+
 export function isOrdinaryInspectionType(value: InspectionType | undefined): value is 'entry' | 'routine' | 'exit' {
   return value === 'entry' || value === 'routine' || value === 'exit';
 }
