@@ -5,7 +5,7 @@ export interface MaterialiseReportInput {
   agencyId: string;
   reportId: string;
   inspectionJobId: string;
-  bookingCommandId: string;
+  bookingCommandId?: string;
   propertyId: string;
   propertyAddress: string;
   tenancyId?: string;
@@ -113,7 +113,7 @@ export function materialisePublishedTemplate(template: InspectionTypeTemplate, i
     reportType: reportType(template),
   });
   aggregate.report.inspectionJobId = input.inspectionJobId;
-  (aggregate.report as Record<string, unknown>).bookingCommandId = input.bookingCommandId;
+  Object.assign(aggregate.report, { bookingCommandId: input.bookingCommandId ?? input.reportId });
   if (input.assignedInspectorId) aggregate.report.assignedUserId = input.assignedInspectorId;
   if (input.assignedAnalystId) aggregate.report.assignedAnalystId = input.assignedAnalystId;
   if (input.assignedReviewerId) aggregate.report.assignedReviewerId = input.assignedReviewerId;
