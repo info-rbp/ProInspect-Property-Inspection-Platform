@@ -45,7 +45,7 @@ import { runShellOperation } from '../../services/runShellOperation';
 
 const statusClass = (enabled: boolean) => 
   enabled 
-    ? 'bg-green-50 text-green-700 border-green-200' 
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
     : 'bg-amber-50 text-amber-700 border-amber-200';
 
 type IntegrationTab = 'drive' | 'calendar' | 'gmail' | 'docs' | 'chat' | 'forms' | 'contacts' | 'picker';
@@ -290,7 +290,7 @@ const SettingsPage: React.FC = () => {
 
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="inline-flex rounded-full border px-2 py-1 text-xs font-semibold bg-green-50 text-green-700 border-green-200">
+            <div className="inline-flex rounded-full border px-2 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200">
               Ready
             </div>
             <div className="flex items-center gap-2 mt-4">
@@ -327,7 +327,7 @@ const SettingsPage: React.FC = () => {
           ) : (
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 border border-green-200">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
                   <CheckCircle2 size={12} /> Connected
                 </span>
                 {googleUser && (
@@ -777,7 +777,7 @@ const SettingsPage: React.FC = () => {
                       </div>
 
                       {pickerSelectedFile && (
-                        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-xs text-green-800 space-y-1">
+                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 space-y-1">
                           <p className="font-bold">Selected File Details</p>
                           <p><strong>Name:</strong> {pickerSelectedFile.name}</p>
                           <p><strong>ID:</strong> {pickerSelectedFile.id}</p>

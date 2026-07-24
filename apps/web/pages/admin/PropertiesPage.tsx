@@ -647,7 +647,7 @@ const PropertiesPage: React.FC = () => {
                     <td className="p-4">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
                         property.status === 'active'
-                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : property.status === 'inactive'
                           ? 'bg-amber-50 text-amber-700 border border-amber-200'
                           : 'bg-gray-50 text-gray-700 border border-gray-200'
