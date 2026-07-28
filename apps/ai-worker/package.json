@@ -16,6 +16,6 @@
     "@pcr/domain": "*",
     "@pcr/validation": "*",
     "firebase-admin": "^14.2.0",
-    "google-auth-library": "^10.4.0"
+    "google-auth-library": "^10.9.1"
   }
 }
