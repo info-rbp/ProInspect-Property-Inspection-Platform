@@ -16,6 +16,6 @@
     "@pcr/domain": "*",
     "@pcr/validation": "*",
     "firebase-admin": "^14.2.0",
-    "playwright-core": "^1.55.0"
+    "playwright-core": "^1.62.0"
   }
 }
