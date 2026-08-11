@@ -25,7 +25,7 @@ jobs:
         run: npm run typecheck --workspace @pcr/web 2>&1 | tee web-typecheck.log
       - name: Upload web typecheck diagnostics
         if: failure() && steps.web_typecheck.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-typecheck-diagnostics
           path: web-typecheck.log
@@ -36,7 +36,7 @@ jobs:
         run: npm run typecheck --workspace @pcr/api 2>&1 | tee api-typecheck.log
       - name: Upload API typecheck diagnostics
         if: failure() && steps.api_typecheck.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-typecheck-diagnostics
           path: api-typecheck.log
@@ -57,7 +57,7 @@ jobs:
         run: npm run lint 2>&1 | tee lint.log
       - name: Upload lint diagnostics
         if: failure() && steps.lint.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-diagnostics
           path: lint.log
@@ -68,7 +68,7 @@ jobs:
         run: npm run test:run 2>&1 | tee unit-tests.log
       - name: Upload unit test diagnostics
         if: failure() && steps.unit_tests.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-diagnostics
           path: unit-tests.log
@@ -79,7 +79,7 @@ jobs:
         run: npm run build:apps 2>&1 | tee build-apps.log
       - name: Upload application build diagnostics
         if: failure() && steps.build_apps.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-apps-diagnostics
           path: build-apps.log
@@ -90,7 +90,7 @@ jobs:
         run: npm run verify:dist 2>&1 | tee verify-dist.log
       - name: Upload built artifact diagnostics
         if: failure() && steps.verify_dist.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verify-dist-diagnostics
           path: verify-dist.log
@@ -111,7 +111,7 @@ jobs:
         run: npm run test:e2e -- --project=chromium 2>&1 | tee chromium.log
       - name: Upload Chromium diagnostics
         if: failure() && steps.chromium.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chromium-playwright-diagnostics
           path: |
@@ -125,7 +125,7 @@ jobs:
         run: npm run test:e2e -- --project=firefox --project=webkit --project=mobile-chrome --project=mobile-safari 2>&1 | tee cross-browser.log
       - name: Upload cross-browser diagnostics
         if: failure() && steps.cross_browser.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cross-browser-playwright-diagnostics
           path: |
